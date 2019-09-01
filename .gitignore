@@ -1,6 +1,6 @@
 
-DirectX11Hook/packages/
+packages/
+x64/
+.vs/
 DirectX11Hook/x64/
-DirectX11Hook/vs/
-DirectX11Hook/DirectX11Hook/x64/
-DirectX11Hook/DirectX11Hook/packages.config
+DirectX11Hook/packages.config
