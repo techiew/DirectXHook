@@ -2,23 +2,26 @@
 #include <iostream>
 #include "Core.h"
 
-// Check if 64 bit
+/* 
+* This .dll is designed to be a proxy .dll
+* A good resource on what a proxy .dll is:
+* https://kevinalmansa.github.io/application%20security/DLL-Proxying/
+*/
+
 #ifdef _WIN64
-#define is64bit 1
-#endif
-
-// Dynamically change which assembly files we use
-#ifdef is64bit
-#define JmpToAddr JmpToAddr64() // 64-bit
+#define JmpToAddr JmpToAddr64()
 #else
-#define JmpToAddr JmpToAddr() // 32-bit
+#define JmpToAddr JmpToAddr()
 #endif
 
-// Assembly function defined in JmpToAddr64.asm or JmpToAddr.asm 
+/* 
+* JmpToAddr is a function coded in assembly which is defined in either 
+* JmpToAddr64.asm or JmpToAddr.asm as decided by the macro above.
+*/
 extern "C" int JmpToAddr;
 
-HMODULE thisModule = 0; // Handle for this .dll
-HMODULE originalDll = 0; // Handle for original .dll
+HMODULE thisDll = 0;
+HMODULE originalDll = 0;
 FARPROC procAddresses[21]; // Original .dll function addresses
 
 Core core = Core();
@@ -35,21 +38,24 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 
 	if (reason == DLL_PROCESS_ATTACH)
 	{
+		DisableThreadLibraryCalls(module);
 
-		// A way to pause the execution of the .dll when it first loads
 		//bool paused = true;
 		//while (paused)
 		//{
+		//
 		//	if (GetAsyncKeyState(VK_F4)) // F4 button
 		//	{
 		//		paused = false;
 		//	}
+		//
 		//}
 
-		thisModule = module;
+		thisDll = module;
 
 		// Load the correct version of dxgi.dll
-#ifdef is64bit
+		// System32 is 64 bit and SysWOW64 is 32 bit... don't ask me why
+#ifdef _WIN64
 		originalDll = LoadLibrary("C:\\Windows\\System32\\dxgi.dll");
 #else
 		originalDll = LoadLibrary("C:\\Windows\\SysWOW64\\dxgi.dll");
@@ -95,10 +101,13 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 
 /* 
 * These are the functions our .dll exports, 
-* we jump to the real .dll's functions to do the job for us.
-* I used a tool to automatically create a template proxy .dll,
+* we jump to the real .dll's functions to do these for us.
+* I used a third-party tool to automatically create a template proxy .dll,
 * https://www.codeproject.com/Articles/1179147/ProxiFy-Automatic-Proxy-DLL-Generation
-* This way you don't have to manually write all the exports
+* By using this you don't have to manually write all the exports or the module definition file (.def)
+*
+* You can also use __declspec: 
+* https://docs.microsoft.com/en-us/cpp/build/exporting-from-a-dll-using-declspec-dllexport?view=vs-2019
 */
 extern "C"
 {
@@ -188,4 +197,5 @@ extern "C"
 		procAddr = procAddresses[20];
 		JmpToAddr;
 	}
+
 }

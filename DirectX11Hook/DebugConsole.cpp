@@ -1,9 +1,5 @@
 #include "DebugConsole.h"
 
-DebugConsole::DebugConsole()
-{
-}
-
 DebugConsole::DebugConsole(std::string consoleName, bool showDebugConsole)
 {
 
@@ -18,52 +14,52 @@ DebugConsole::DebugConsole(std::string consoleName, bool showDebugConsole)
 	SetWindowText(GetConsoleWindow(), consoleName.c_str());
 }
 
+void DebugConsole::PrintDebugMsg(std::string msg)
+{
+	if (isDisabled) return;
+
+	printf(std::string("> " + msg + "\n").c_str());
+}
+
+void DebugConsole::PrintDebugMsg(std::string msg, void* value)
+{
+	if (isDisabled) return;
+
+	printf(std::string("> " + msg + "\n").c_str(), value);
+}
+
 void DebugConsole::PrintDebugMsg(std::string msg, void* value, MsgType msgType)
 {
 	if (isDisabled) return;
-	if (msg == "") return;
-
-	std::string preMsg = "";
-
-	for (int i = 1; i < counter; i++)
-	{
-		preMsg += "-";
-	}
-
-	if(counter > 0 && msgType != MsgType::STARTPROCESS) preMsg += ">";
 
 	switch (msgType)
 	{
 	case(STARTPROCESS):
-		printf(std::string(preMsg + "[+] " + msg + "\n").c_str(), value);
-		counter++;
+		printf(std::string(" [+] " + msg + "\n").c_str(), value);
 		break;
 	case(PROGRESS):
-		printf(std::string(preMsg + " " + msg + "\n").c_str(), value);
+		printf(std::string("> " + msg + "\n").c_str(), value);
 		break;
 	case(COMPLETE):
-		printf(std::string(preMsg + " " + msg + "\n").c_str(), value);
-		counter--;
+		printf(std::string("> " + msg + "\n").c_str(), value);
 		break;
 	case(FAILED): 
-		printf(std::string("[!] " + msg + "\n").c_str(), value);
+		printf(std::string(" [!] " + msg + "\n").c_str(), value);
 		break;
 	}
 
 }
 
-void DebugConsole::PrintSingleChar(char value, bool isHex)
+void DebugConsole::PrintHex(unsigned char hexValue)
 {
 	if (isDisabled) return;
-	if (value == ' ') return;
 
-	if (isHex)
-	{
-		printf("%X", value);
-	}
-	else
-	{
-		printf("%c", value);
-	}
+	printf("0x%X ", hexValue);
+}
 
+void DebugConsole::NewLine()
+{
+	if (isDisabled) return;
+
+	printf("\n");
 }

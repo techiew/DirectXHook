@@ -16,31 +16,35 @@
 #include "Text.h"
 #include <fstream>
 #include "Fonts.h"
+#include "Overlay.h"
 
-// ComPtr is an official smart pointer for COM objects, DirectX objects are COM objects
+// ComPtr is an official smart pointer used for COM objects, DirectX objects are COM objects
+// https://docs.microsoft.com/en-us/cpp/cppcx/wrl/comptr-class?view=vs-2019
 
 class Renderer
 {
 private:
-	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShaderTextures;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;
-	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context = NULL;
-	Microsoft::WRL::ComPtr<ID3D11Device> device = NULL;
-	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mainRenderTargetView;
-	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer = nullptr;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader = nullptr;
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShaderTextures = nullptr;
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader = nullptr;
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout = nullptr;
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context = nullptr;
+	Microsoft::WRL::ComPtr<ID3D11Device> device = nullptr;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mainRenderTargetView = nullptr;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState = nullptr;
 	D3D11_VIEWPORT viewport;
-	std::shared_ptr<DirectX::SpriteBatch> spriteBatch = nullptr;
-	std::shared_ptr<DirectX::SpriteFont> exampleFont = nullptr;
 
+	std::shared_ptr<DirectX::SpriteBatch> spriteBatch;
+	std::shared_ptr<DirectX::SpriteFont> exampleFont;
 	DebugConsole* console;
-	Textures* textures;
-	Fonts* fonts;
+	Textures textures;
+	Fonts fonts;
+	Overlay overlay;
 
 	bool initialized = false;
-	bool firstRender = true;
+	bool firstInit = true;
+	bool drawExamples = false;
 	int windowWidth, windowHeight;
 
 	void CreatePipeline();
@@ -52,14 +56,17 @@ private:
 
 public:
 	Renderer() {};
-	Renderer(DebugConsole* console, Textures* textures, Fonts* fonts);
+	Renderer(DebugConsole* console, bool drawExamples);
 	bool Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
-	bool Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags, std::vector<Mesh> thingsToDraw, std::vector<Text> textToDraw, bool drawExamples);
+	void Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
 	HRESULT CreateBufferForMesh(D3D11_BUFFER_DESC desc, D3D11_SUBRESOURCE_DATA data, ID3D11Buffer** buffer);
+	void OnPresent(IDXGISwapChain *swapChain, UINT syncInterval, UINT flags);
+	void OnResizeBuffers(UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
+	void SetDrawExamples(bool doDraw);
+	Textures* GetTextures();
+	Fonts* GetFonts();
 	bool IsInitialized();
-	bool IsFirstRender();
 	int GetWindowWidth();
 	int GetWindowHeight();
-	void SetFirstRender(bool isFirstRender);
 	ID3D11Device* GetDevice();
 };

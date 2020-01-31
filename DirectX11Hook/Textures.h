@@ -10,7 +10,7 @@ class Textures
 {
 private:
 	DebugConsole* console;
-	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textures; // Textures are ordered from first to last loaded (0 to current size)
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textures;
 	Microsoft::WRL::ComPtr<ID3D11Device> device = nullptr;
 
 public:

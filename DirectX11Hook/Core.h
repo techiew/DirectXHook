@@ -17,65 +17,62 @@
 #include "Fonts.h"
 #include <direct.h>
 #include <stdio.h>
+#include "SigScanner.h"
 
-// We redo the defines from DllMain, because the defines are not global
-
-// Check if 64 bit
 #ifdef _WIN64
-#define is64bit 1
-#endif
-
-/*
-* A QWORD consists of 8 bytes in memory, and if we are dealing
-* with a 64-bit program, where the memory addresses are 8 bytes long,
-* we use QWORD (same size as unsigned __int64) to hold memory addresses.
-* Otherwise, with 32-bit, we use a DWORD, which consists of 4 bytes
-*/
-#ifdef is64bit
-#define JmpToHookAndJmpBack JmpToHookAndJmpBack64
-typedef unsigned __int64 QWORD; // My C++ doesn't have QWORD for some reason
+typedef unsigned __int64 QWORD; 
 typedef QWORD MEMADDR; 
 #else
-#define JmpToHookAndJmpBack JmpToHookAndJmpBack
 typedef DWORD MEMADDR;
 #endif
 
-// Type definition of the DXGI present function, so we can cast memory addresses
-// to this function, this way we can call the function at the given memory address
-// and pass parameters to the registers and stack at the location.
-// 64-bit Present actually uses the __fastcall calling convention, but the compiler changes
-// __stdcall to __fastcall automatically for 64-bit compilation.
-typedef HRESULT (__stdcall* PresentFunction)(IDXGISwapChain *pSwapChain, UINT SyncInterval, UINT Flags);
+/* 
+* A type definition of the DXGI present function, so we can cast memory addresses
+* to this function, this way we can call the function at the given memory address
+* and pass parameters to the registers and stack at the location in the correct way.
+* 64-bit Present actually uses the __fastcall calling convention, but the compiler changes
+* __stdcall to __fastcall automatically for 64-bit compilation.
+* A great resource on calling conventions: https://www.codeproject.com/Articles/1388/Calling-Conventions-Demystified
+*/
+typedef HRESULT (__stdcall* PresentFunction)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
+typedef HRESULT(__stdcall* ResizeBuffersFunction)(UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
 
 class Core
 {
 private:
 	HMODULE originalDll;
-	MEMADDR originalDllBaseAddress;
-	MEMADDR originalPresentFunctionOffset;
-	PresentFunction originalPresentFunction;
-	bool texturesLoaded = false;
-	bool meshesCreated = false;
-	bool fontsLoaded = false;
-	bool textCreated = false;
+	MEMADDR targetDllBaseAddress;
+	MEMADDR targetPresentOffset;
+	MEMADDR targetResizeBuffersOffset;
+	PresentFunction* targetPresentFunction;
+	ResizeBuffersFunction* targetResizeBuffersFunction;
 	bool drawExamples = false;
 	bool showDebugConsole = false;
+	bool steamOverlayActive = false;
+	int presentHookSize;
+	int resizeBuffersHookSize;
+	const char* steamDllName;
+
 	std::vector<Mesh> thingsToDraw = std::vector<Mesh>();
 	std::vector<Text> textToDraw = std::vector<Text>();
-	std::shared_ptr<std::string> originalInstructionsBuffer;
+
+	std::vector<void*> allocatedMemory = std::vector<void*>();
+	SigScanner scanner;
+
+	void AllocateMemory(void** storePointer, int size);
 
 public:
 	MEMADDR newPresentReturn;
+	MEMADDR newResizeBuffersReturn;
 	DebugConsole console;
 	Renderer renderer;
-	Textures textures;
-	Fonts fonts;
 
 	void Init(HMODULE originalDll);
-	void Hook(MEMADDR originalFunction, MEMADDR newFunction, int bytes);
+	PresentFunction* FindPresentAddress(bool hookSteamOverlay);
+	ResizeBuffersFunction* FindResizeBuffersAddress(bool hookSteamOverlay);
+	void Hook(void* hookFrom, void* hookTo, void* returnAddress, int bytes);
 	void Update();
-	void Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
-	void AddMeshForDrawing(Mesh mesh);
-	void AddTextForDrawing(Text text);
+	void OnPresent(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
+	void OnResizeBuffers(UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
 	~Core();
 };

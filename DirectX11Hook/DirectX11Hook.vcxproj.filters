@@ -51,6 +51,12 @@
     <ClInclude Include="Vertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SigScanner.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Overlay.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.cpp">
@@ -80,11 +86,12 @@
     <ClCompile Include="Textures.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Shaders.hlsl">
-      <Filter>HLSL Shaders</Filter>
-    </FxCompile>
+    <ClCompile Include="SigScanner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Overlay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="dxgi.def">
@@ -107,11 +114,10 @@
     <MASM Include="JmpToAddr64.asm">
       <Filter>Source Files\Assembly Code</Filter>
     </MASM>
-    <MASM Include="JmpToHookAndJmpBack.asm">
-      <Filter>Source Files\Assembly Code</Filter>
-    </MASM>
-    <MASM Include="JmpToHookAndJmpBack64.asm">
-      <Filter>Source Files\Assembly Code</Filter>
-    </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders.hlsl">
+      <Filter>HLSL Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

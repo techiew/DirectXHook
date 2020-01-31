@@ -26,6 +26,9 @@ int Textures::LoadTexture(std::string filepath)
 	std::wstring wideString(filepath.length(), ' ');
 	std::copy(filepath.begin(), filepath.end(), wideString.begin());
 
+
+	console->PrintDebugMsg("Texture addr: ", (void*)texture.GetAddressOf(), MsgType::PROGRESS);
+
 	HRESULT texResult = CreateDDSTextureFromFile(device.Get(), wideString.c_str(), nullptr, texture.GetAddressOf());
 	_com_error texErr(texResult);
 	console->PrintDebugMsg("Texture HRESULT: %s", (void*)texErr.ErrorMessage(), MsgType::PROGRESS);

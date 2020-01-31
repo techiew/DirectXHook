@@ -4,10 +4,10 @@ using namespace Microsoft::WRL;
 using namespace DirectX;
 
 /*
-* Load the shaders at compile time into a constant by converting
-* the shader code into a string. By doing this we don't have to
-* place the shaders next to our .dll (or embed in some other way).
-* And we get to keep the nice HLSL formatting/highlighting in Visual Studio.
+* We load the shaders at compile time into a constant (shaderData) by converting
+* the shader code file into a string. By doing this we don't need to bring the
+* shader file around next to our .dll for it to get loaded, because it's embedded 
+* instead. 
 * 
 * Found how to do this here: 
 * https://stackoverflow.com/questions/20443560/how-to-practically-ship-glsl-shaders-with-your-c-software
@@ -18,27 +18,37 @@ const char* shaderData = {
 
 
 
-Renderer::Renderer(DebugConsole* console, Textures* textures, Fonts* fonts)
+Renderer::Renderer(DebugConsole* console, bool drawExamples)
 {
 	this->console = console;
-	this->textures = textures;
-	this->fonts = fonts;
+	this->drawExamples = drawExamples;
+	textures = Textures(console);
+	fonts = Fonts(console);
+	overlay = Overlay(this, console);
 }
 
 bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 {
-	console->PrintDebugMsg("Initializing renderer...", nullptr, MsgType::STARTPROCESS);
 
-	HRESULT getDevice = swapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
-
-	if (SUCCEEDED(getDevice))
+	if (firstInit)
 	{
-		device->GetImmediateContext(&context);
+		console->PrintDebugMsg("Initializing renderer...", nullptr, MsgType::STARTPROCESS);
+		HRESULT getDevice = swapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
+
+		if (SUCCEEDED(getDevice))
+		{
+			device->GetImmediateContext(&context);
+			spriteBatch = std::make_shared<SpriteBatch>(context.Get());
+		}
+		else
+		{
+			return false;
+		}
+
 	}
 	else
 	{
-		console->PrintDebugMsg("Failed to initialize renderer", nullptr, MsgType::FAILED);
-		return false;
+		console->PrintDebugMsg("Resizing buffers...", nullptr, MsgType::STARTPROCESS);
 	}
 
 	DXGI_SWAP_CHAIN_DESC desc;
@@ -49,81 +59,69 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 	GetClientRect(desc.OutputWindow, &hwndRect);
 	windowWidth = hwndRect.right - hwndRect.left;
 	windowHeight = hwndRect.bottom - hwndRect.top;
-
 	console->PrintDebugMsg("Window width: %i", (void*)windowWidth, MsgType::PROGRESS);
 	console->PrintDebugMsg("Window height: %i", (void*)windowHeight, MsgType::PROGRESS);
 
-	ComPtr<ID3D11Texture2D> backbuffer;
+	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
+	viewport.Width = windowWidth;
+	viewport.Height = windowHeight;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
 
+	ComPtr<ID3D11Texture2D> backbuffer;
 	swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)backbuffer.GetAddressOf());
 	device->CreateRenderTargetView(backbuffer.Get(), nullptr, &mainRenderTargetView);
-	console->PrintDebugMsg("Backbuffer address: %p", backbuffer.Get(), MsgType::PROGRESS);
+	backbuffer.ReleaseAndGetAddressOf();
 
-	// Sprite batch used for drawing text
-	spriteBatch = std::make_shared<SpriteBatch>(context.Get());
+	if (firstInit)
+	{
+		CreatePipeline();
+		CreateExampleTriangle();
+		CreateExampleFont();
 
-	CreatePipeline();
-	CreateExampleTriangle();
-	CreateExampleFont();
+		textures.SetDevice(device.Get());
+		fonts.SetDevice(device.Get());
+		overlay.SetSpriteBatch(spriteBatch.get());
 
-	console->PrintDebugMsg("Successfully initialized the renderer", nullptr, MsgType::COMPLETE);
+		console->PrintDebugMsg("Successfully initialized the renderer", nullptr, MsgType::COMPLETE);
+
+		overlay.LoadEverything();
+	}
+
 	initialized = true;
+	firstInit = false;
 	return true;
 }
 
-bool Renderer::Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags, std::vector<Mesh> thingsToDraw, std::vector<Text> textToDraw, bool drawExamples)
+void Renderer::Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 {
+	if (!initialized) return;
+
 	context->OMSetRenderTargets(1, mainRenderTargetView.GetAddressOf(), nullptr);
 	context->RSSetViewports(1, &viewport);
 
-	context->IASetInputLayout(inputLayout.Get());
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	context->VSSetShader(vertexShader.Get(), nullptr, 0);
-	context->PSSetShader(pixelShaderTextures.Get(), nullptr, 0);
-
-	context->PSSetSamplers(0, 1, samplerState.GetAddressOf());
-
-	UINT stride = sizeof(Vertex);
-	UINT offset = 0;
-
-	for (int i = 0; i < thingsToDraw.size(); i++)
-	{
-		Mesh mesh = thingsToDraw.at(i);
-		ComPtr<ID3D11ShaderResourceView> texture = textures->GetTexture(mesh.GetTextureIndex()).Get();
-
-		if (mesh.GetTextureIndex() == -1 || texture.Get() == nullptr)
-		{
-			context->PSSetShader(pixelShader.Get(), nullptr, 0);
-		}
-		else
-		{
-			context->PSSetShaderResources(0, 1, texture.GetAddressOf());
-		}
-
-		context->IASetVertexBuffers(0, 1, mesh.GetVertexBuffer(), &stride, &offset);
-		context->IASetIndexBuffer(*mesh.GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
-		context->DrawIndexed(mesh.GetNumIndices(), 0, 0);
-	}
-
-	if (drawExamples)
-	{
-		DrawExampleTriangle(); // Example triangle for render testing
-		DrawExampleText(); // Same but with text
-	}
+	overlay.Draw();
 
 	// Spritebatch modifies certain rendering settings, so we draw them last
-	spriteBatch->Begin();
-	for (int i = 0; i < textToDraw.size(); i++)
-	{
-		Text text = textToDraw.at(i);
-		SpriteFont* font = fonts->GetFont(textToDraw.at(i).GetFontIndex());
-		if(font != nullptr) 
-			font->DrawString(spriteBatch.get(), text.GetText(), XMFLOAT2(text.GetPosPixels(windowWidth, windowHeight).x, text.GetPosPixels(windowWidth, windowHeight).y));
-	}
-	spriteBatch->End();
+	//spriteBatch->Begin();
+	//for (int i = 0; i < textToDraw.size(); i++)
+	//{
+	//	Text text = textToDraw.at(i);
+	//	SpriteFont* font = fonts->GetFont(textToDraw.at(i).GetFontIndex());
+	//	if(font != nullptr) 
+	//		font->DrawString(spriteBatch.get(), text.GetText(), XMFLOAT2(text.GetPosPixels(windowWidth, windowHeight).x, text.GetPosPixels(windowWidth, windowHeight).y));
+	//}
+	//spriteBatch->End();
 
-	return true;
+	//if (drawExamples)
+	//{
+	//	DrawExampleTriangle(); // Example triangle for render testing
+	//	DrawExampleText(); // Same but with text
+	//}
+
+	return;
 }
 
 void Renderer::CreatePipeline()
@@ -150,14 +148,6 @@ void Renderer::CreatePipeline()
 
 	device->CreateInputLayout(inputLayoutDesc, ARRAYSIZE(inputLayoutDesc), vertexShaderBlob->GetBufferPointer(),
 		vertexShaderBlob->GetBufferSize(), inputLayout.GetAddressOf());
-
-	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
-	viewport.Width = windowWidth;
-	viewport.Height = windowHeight;
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
-	viewport.TopLeftX = 0;
-	viewport.TopLeftY = 0;
 
 	D3D11_SAMPLER_DESC samplerDesc;
 	ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
@@ -202,9 +192,9 @@ void Renderer::CreateExampleTriangle()
 {
 	Vertex vertices[] =
 	{
-		{ XMFLOAT3(0.0f, 0.3f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f), XMFLOAT2(0.5f, 0.0f) },
-		{ XMFLOAT3(0.2f, -0.3f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.5f) },
-		{ XMFLOAT3(-0.2f, -0.3f, 0.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.5f) }
+		{ XMFLOAT3(0.5f, 0.1f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f), XMFLOAT2(0.5f, 0.0f) },
+		{ XMFLOAT3(0.6f, -0.1f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.5f) },
+		{ XMFLOAT3(0.4f, -0.1f, 0.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.5f) }
 	};
 
 	D3D11_BUFFER_DESC vbDesc = { 0 };
@@ -221,13 +211,11 @@ void Renderer::CreateExampleTriangle()
 
 void Renderer::CreateExampleFont()
 {
-	// Create sprite batch for text, also make an example font
-	// We need to check if the font exists, if the file doesn't exist the program will crash
 	std::fstream file = std::fstream(".\\hook_fonts\\arial_22.spritefont");
 
 	if (!file.fail())
 	{
-		file.close(); // Close the stream so we don't block the file
+		file.close();
 		exampleFont = std::make_shared<SpriteFont>(device.Get(), L".\\hook_fonts\\arial_22.spritefont");
 	}
 
@@ -238,7 +226,12 @@ void Renderer::DrawExampleTriangle()
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 
+	context->IASetInputLayout(inputLayout.Get());
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	context->VSSetShader(vertexShader.Get(), nullptr, 0);
 	context->PSSetShader(pixelShader.Get(), nullptr, 0);
+
 	context->IASetVertexBuffers(0, 1, vertexBuffer.GetAddressOf(), &stride, &offset);
 	context->Draw(3, 0);
 }
@@ -261,14 +254,41 @@ void Renderer::DrawExampleText()
 	spriteBatch->End();
 }
 
+void Renderer::OnPresent(IDXGISwapChain * swapChain, UINT syncInterval, UINT flags)
+{
+
+	if (!initialized)
+	{
+		if (!Init(swapChain, syncInterval, flags)) return;
+	}
+
+	Render(swapChain, syncInterval, flags);
+}
+
+void Renderer::OnResizeBuffers(UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags)
+{
+	initialized = false;
+	mainRenderTargetView.ReleaseAndGetAddressOf();
+}
+
+void Renderer::SetDrawExamples(bool doDraw)
+{
+	drawExamples = doDraw;
+}
+
+Textures* Renderer::GetTextures()
+{
+	return &textures;
+}
+
+Fonts* Renderer::GetFonts()
+{
+	return &fonts;
+}
+
 bool Renderer::IsInitialized()
 {
 	return initialized;
-}
-
-bool Renderer::IsFirstRender()
-{
-	return firstRender;
 }
 
 int Renderer::GetWindowWidth()
@@ -281,12 +301,35 @@ int Renderer::GetWindowHeight()
 	return windowHeight;
 }
 
-void Renderer::SetFirstRender(bool isFirstRender)
-{
-	firstRender = isFirstRender;
-}
-
 ID3D11Device* Renderer::GetDevice()
 {
 	return device.Get();
 }
+
+
+//context->VSSetShader(vertexShader.Get(), nullptr, 0);
+//context->PSSetShader(pixelShaderTextures.Get(), nullptr, 0);
+
+//context->PSSetSamplers(0, 1, samplerState.GetAddressOf());
+
+//UINT stride = sizeof(Vertex);
+//UINT offset = 0;
+
+//for (int i = 0; i < thingsToDraw.size(); i++)
+//{
+//	Mesh mesh = thingsToDraw.at(i);
+	//ComPtr<ID3D11ShaderResourceView> texture = textures->GetTexture(mesh.GetTextureIndex()).Get();
+
+	//if (mesh.GetTextureIndex() == -1 || texture.Get() == nullptr)
+	//{
+		//context->PSSetShader(pixelShader.Get(), nullptr, 0);
+	//}
+	//else
+	//{
+	//	context->PSSetShaderResources(0, 1, texture.GetAddressOf());
+	//}
+
+	//context->IASetVertexBuffers(0, 1, mesh.GetVertexBuffer(), &stride, &offset);
+	//context->IASetIndexBuffer(*mesh.GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
+	//context->DrawIndexed(mesh.GetNumIndices(), 0, 0);
+//}

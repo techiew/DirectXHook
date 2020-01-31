@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <vector>
 #include <iostream>
 #include <Windows.h>
 
@@ -16,14 +15,14 @@ enum MsgType
 class DebugConsole
 {
 private:
-	std::vector<std::string> msgQueue;
-	int counter = 0;
 	bool isDisabled = false;
 
 public:
-
-	DebugConsole();
+	DebugConsole() {};
 	DebugConsole(std::string consoleName, bool showDebugConsole);
+	void PrintDebugMsg(std::string msg);
+	void PrintDebugMsg(std::string msg, void* variable);
 	void PrintDebugMsg(std::string msg, void* variable, MsgType msgType);
-	void PrintSingleChar(char value, bool isHex);
+	void PrintHex(unsigned char hexValue);
+	void NewLine();
 };

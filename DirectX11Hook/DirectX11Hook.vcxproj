@@ -23,17 +23,13 @@
     <ClInclude Include="DebugConsole.h" />
     <ClInclude Include="Fonts.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="Overlay.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="SigScanner.h" />
     <ClInclude Include="Text.h" />
     <ClInclude Include="TexturedBox.h" />
     <ClInclude Include="Textures.h" />
     <ClInclude Include="Vertex.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Shaders.hlsl">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.cpp" />
@@ -41,7 +37,9 @@
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="Fonts.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="Overlay.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="SigScanner.cpp" />
     <ClCompile Include="Text.cpp" />
     <ClCompile Include="TexturedBox.cpp" />
     <ClCompile Include="Textures.cpp" />
@@ -55,14 +53,6 @@
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </MASM>
-    <MASM Include="JmpToHookAndJmpBack.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="JmpToHookAndJmpBack64.asm">
-      <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </MASM>
   </ItemGroup>
   <ItemGroup>
     <None Include="dxgi.def" />
@@ -71,6 +61,12 @@
   <ItemGroup>
     <Image Include="hook_textures\texture.DDS" />
     <Image Include="hook_textures\texture2.DDS" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -133,6 +129,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <TargetName>dxgi</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -176,12 +173,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;DIRECTX11HOOK_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>D3DCompiler.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -203,16 +203,21 @@
       <AdditionalDependencies>D3DCompiler.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\x64\Release\dxgi.dll" "E:\SteamLibrary\steamapps\common\Monster Hunter World"
+XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_textures" "E:\SteamLibrary\steamapps\common\Monster Hunter World\hook_textures\"
+XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_fonts" "E:\SteamLibrary\steamapps\common\Monster Hunter World\hook_fonts\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
-    <Import Project="..\packages\directxtk_desktop_2015.2019.5.31.1\build\native\directxtk_desktop_2015.targets" Condition="Exists('..\packages\directxtk_desktop_2015.2019.5.31.1\build\native\directxtk_desktop_2015.targets')" />
+    <Import Project="..\packages\directxtk_desktop_2015.2019.12.17.1\build\native\directxtk_desktop_2015.targets" Condition="Exists('..\packages\directxtk_desktop_2015.2019.12.17.1\build\native\directxtk_desktop_2015.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\directxtk_desktop_2015.2019.5.31.1\build\native\directxtk_desktop_2015.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk_desktop_2015.2019.5.31.1\build\native\directxtk_desktop_2015.targets'))" />
+    <Error Condition="!Exists('..\packages\directxtk_desktop_2015.2019.12.17.1\build\native\directxtk_desktop_2015.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk_desktop_2015.2019.12.17.1\build\native\directxtk_desktop_2015.targets'))" />
   </Target>
 </Project>
