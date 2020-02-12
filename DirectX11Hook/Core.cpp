@@ -26,7 +26,7 @@ HRESULT __stdcall Present(IDXGISwapChain* swapChain, UINT syncInterval, UINT fla
 /*
 * The real ResizeBuffers will get hooked and then detour to this function.
 * ResizeBuffers usually gets called when the window resizes (not all games call it).
-* We need to hook this so we can release our reference to the render target.
+* We need to hook this so we can release our reference to the render target when it's called.
 * If we don't do this then the game will most likely crash.
 * https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-resizebuffers
 */
@@ -63,6 +63,7 @@ void Core::Init(HMODULE originalDll)
 
 	targetDllBaseAddress = (MEMADDR)originalDll;
 
+	// Check if the steam overlay is enabled
 #ifdef _WIN64
 	HMODULE gorModule = GetModuleHandle("gameoverlayrenderer64.dll");
 	steamDllName = "gameoverlayrenderer64.dll";
@@ -81,8 +82,8 @@ void Core::Init(HMODULE originalDll)
 		steamOverlayActive = true;
 	}
 
-	targetPresentFunction = FindPresentAddress(steamOverlayActive);
 	targetResizeBuffersFunction = FindResizeBuffersAddress(steamOverlayActive);
+	targetPresentFunction = FindPresentAddress(steamOverlayActive);
 	targetPresentOffset = (MEMADDR)targetPresentFunction - targetDllBaseAddress;
 	targetResizeBuffersOffset = (MEMADDR)targetResizeBuffersFunction - targetDllBaseAddress;
 
@@ -95,10 +96,10 @@ void Core::Init(HMODULE originalDll)
 		console.PrintDebugMsg("dxgi.dll base address: %p", (void*)targetDllBaseAddress);
 	}
 
-	console.PrintDebugMsg("Present offset: %p", (void*)targetPresentOffset);
-	console.PrintDebugMsg("Present address: %p", (void*)targetPresentFunction);
 	console.PrintDebugMsg("ResizeBuffers offset: %p", (void*)targetResizeBuffersOffset);
 	console.PrintDebugMsg("ResizeBuffers address: %p", (void*)targetResizeBuffersFunction);
+	console.PrintDebugMsg("Present offset: %p", (void*)targetPresentOffset);
+	console.PrintDebugMsg("Present address: %p", (void*)targetPresentFunction);
 
 	Hook(targetResizeBuffersFunction, &ResizeBuffers, &newResizeBuffersReturn, resizeBuffersHookSize);
 	Hook(targetPresentFunction, &Present, &newPresentReturn, presentHookSize);
@@ -123,6 +124,53 @@ void Core::AllocateMemory(void** storePointer, int size)
 		console.PrintDebugMsg("Allocated space for a hook at %p", *storePointer);
 	}
 
+}
+
+// Signature scan for ResizeBuffers
+ResizeBuffersFunction* Core::FindResizeBuffersAddress(bool hookSteamOverlay)
+{
+	console.PrintDebugMsg("Sigscanning for address of ResizeBuffers...", nullptr);
+	const char* bytes;
+	const char* mask;
+	int offset = 0;
+	void* resizeBuffersAddress;
+
+	if (hookSteamOverlay)
+	{
+#ifdef _WIN64
+		// 64-bit with steam overlay
+		resizeBuffersHookSize = 15;
+		bytes = "\x41\x8B\xE9\x48\x8D\x0D\x00\x00\x00\x00\x45\x8B\xF0\xE8";
+		mask = "xxxxxx????xxxx";
+		offset = -33;
+#else
+		// 32-bit with steam overlay
+		resizeBuffersHookSize = 7;
+		bytes = "\x55\x8B\xEC\x53\x8B\x5D\x00\xB9\x00\x00\x00\x00\x56\x57\x53\xE8\x00\x00\x00\x00\x53";
+		mask = "xxxxxx?x????xxxx????x";
+		offset = 0;
+#endif
+		resizeBuffersAddress = (char*)scanner.FindPattern(steamDllName, bytes, mask) + offset;
+	}
+	else
+	{
+#ifdef _WIN64
+		// 64-bit without steam overlay
+		resizeBuffersHookSize = 16;
+		bytes = "\x8B\x75\x7F\x89\x74\x24\x30\x44\x8B\x75\x77\x44\x89\x74\x24\x28";
+		mask = "xxxxxxxxxxxxxxxx";
+		offset = -55;
+#else
+		// 32-bit without steam overlay
+		resizeBuffersHookSize = 5;
+		bytes = "\x8B\x4D\x1C\x8B\x5D\x08\x89\x85\x68\xFF\xFF\xFF";
+		mask = "xxxxxxxxxxxx";
+		offset = -20;
+#endif
+		resizeBuffersAddress = (char*)scanner.FindPattern(originalDll, bytes, mask) + offset;
+	}
+
+	return (ResizeBuffersFunction*)resizeBuffersAddress;
 }
 
 // Signature scan for Present
@@ -161,62 +209,15 @@ PresentFunction* Core::FindPresentAddress(bool hookSteamOverlay)
 		offset = -67;
 #else
 		// 32-bit without steam overlay
-		presentHookSize = 0;
-		bytes = "";
-		mask = "";
-		offset = 0;
+		presentHookSize = 5;
+		bytes = "\x8D\x4C\x24\x0C\x57\xFF\x75\x10\xFF\x75\x0C\x56";
+		mask = "xxxxxxxxxxxx";
+		offset = -26;
 #endif
 		presentAddress = (char*)scanner.FindPattern(originalDll, bytes, mask) + offset;
 	}
 
 	return (PresentFunction*)presentAddress;
-}
-
-// Signature scan for ResizeBuffers
-ResizeBuffersFunction* Core::FindResizeBuffersAddress(bool hookSteamOverlay)
-{
-	console.PrintDebugMsg("Sigscanning for address of ResizeBuffers...", nullptr);
-	const char* bytes;
-	const char* mask;
-	int offset = 0;
-	void* resizeBuffersAddress;
-
-	if (hookSteamOverlay)
-	{
-#ifdef _WIN64
-		// 64-bit with steam overlay
-		resizeBuffersHookSize = 15;
-		bytes = "\x41\x8B\xE9\x48\x8D\x0D\x00\x00\x00\x00\x45\x8B\xF0\xE8";
-		mask = "xxxxxx????xxxx";
-		offset = -33;
-#else
-		// 32-bit with steam overlay
-		resizeBuffersHookSize = 7;
-		bytes = "\x55\x8B\xEC\x53\x8B\x5D\x00\xB9\x00\x00\x00\x00\x56\x57\x53\xE8\x00\x00\x00\x00\x53";
-		mask = "xxxxxx?x????xxxx????x";
-		offset = 0;
-#endif
-		resizeBuffersAddress = (char*)scanner.FindPattern(steamDllName, bytes, mask) + offset;
-	}
-	else
-	{
-#ifdef _WIN64
-		// 64-bit without steam overlay
-		resizeBuffersHookSize = 16;
-		bytes = "\x48\x89\x00\x00\x48\x89\x00\x00\x48\x89\x00\x00\x45\x8B\xF9\x45\x8B\xE0";
-		mask = "xx??xx??xx??xxxxxx";
-		offset = -31;
-#else
-		// 32-bit without steam overlay
-		resizeBuffersHookSize = 0;
-		bytes = "";
-		mask = "";
-		offset = 0;
-#endif
-		resizeBuffersAddress = (char*)scanner.FindPattern(originalDll, bytes, mask) + offset;
-	}
-
-	return (ResizeBuffersFunction*)resizeBuffersAddress;
 }
 
 // The actual hooking, places assembly jumps between hookFrom and hookTo
@@ -228,11 +229,11 @@ void Core::Hook(void* hookFrom, void* hookTo, void* returnAddress, int length)
 	DWORD oldProtection;
 	VirtualProtect(hookFrom, length, PAGE_EXECUTE_READWRITE, &oldProtection);
 
-	// Copy overwritten bytes to a buffer
+	// Copy any to-be-overwritten bytes to a buffer
 	std::vector<unsigned char> bytesBuffer = std::vector<unsigned char>(length, '*');
 	memcpy(&bytesBuffer[0], hookFrom, length);
 
-	// Print overwritten bytes to console for debugging
+	// Print overwritten bytes to console for debugging purposes
 	console.PrintDebugMsg("Original bytes: ");
 	for (int i = 0; i < bytesBuffer.size(); i++)
 	{
@@ -242,26 +243,30 @@ void Core::Hook(void* hookFrom, void* hookTo, void* returnAddress, int length)
 	console.PrintDebugMsg("Size: %i", (void*)bytesBuffer.size());
 
 	/*
-	* We will now place an absolute 64-bit jump (FF 25 00000000) to our assembly code
+	* We will now place an absolute 64-bit jump (0xFF25000000000000) which jumps to our assembly code
 	* Our assembly code contains the instructions that will be overwritten after we place said jump.
-	* It also handles jumping to the new function we are detouring to and jumping back to the
+	* It also handles jumping to the new function we are detouring to and then handles jumping back to the
 	* original code. The space for this assembly code is allocated manually and the assembly
-	* instructions themselves are created by writing them directly into memory.
+	* instructions themselves are created by writing bytes directly into memory.
 	*
-	* Bytes are flipped around by default (because of 'endianness'), so we use _byteswap to flip
-	* back for easier reading
+	* _byteswap is used to make the hex more readable, normally the bytes would have to be
+	* inverted when we write them in.
 	*
 	* We fill the _byteswap function with a full 8 bytes, otherwise it returns garbage
 	*
-	* An absolute 64-bit jump instruction uses only 6 bytes on its own in memory,
-	* but then reads an 8-byte address from the following memory address
+	* An absolute 64-bit jump instruction (0xFF25000000000000) uses only 6 bytes on its own in memory,
+	* but when it's called it will read an 8-byte address starting from the following memory address.
 	*
-	* If it's 32-bit, we do a normal jump (0xE9000000)
+	* If it's 32-bit, we do a normal, relative jump (0xE9000000)
+	*
+	* Resource:
+	* https://www.felixcloutier.com/x86/jmp
 	*/
 
 	MEMADDR hookMemory = 0;
 
 #ifdef _WIN64
+	// Allocates jmp size + length + return jmp size
 	AllocateMemory((void**)&hookMemory, 14 + length + 14);
 
 	*((MEMADDR*)hookMemory) = _byteswap_uint64(0xFF25000000000000);
@@ -269,10 +274,10 @@ void Core::Hook(void* hookFrom, void* hookTo, void* returnAddress, int length)
 
 	memcpy((MEMADDR*)(hookMemory + 14), &bytesBuffer[0], length);
 
+	*(MEMADDR*)returnAddress = hookMemory + 14;
+
 	*((MEMADDR*)(hookMemory + 14 + length)) = _byteswap_uint64(0xFF25000000000000);
 	*((MEMADDR*)(hookMemory + 14 + length + 6)) = (MEMADDR)hookFrom + length;
-
-	*(MEMADDR*)returnAddress = hookMemory + 14;
 
 	memset(hookFrom, 0x90, length);
 
@@ -280,26 +285,32 @@ void Core::Hook(void* hookFrom, void* hookTo, void* returnAddress, int length)
 	*((MEMADDR*)((char*)hookFrom + 6)) = hookMemory;
 
 #else
+	// Allocates jmp size + length + return jmp size
 	AllocateMemory((void**)&hookMemory, 5 + length + 5);
 
+	MEMADDR relativeAddress;
+
+	relativeAddress = (MEMADDR)hookTo - hookMemory - 5;
+
 	*((MEMADDR*)hookMemory) = _byteswap_ulong(0xE9000000);
-	*((MEMADDR*)(hookMemory + 1)) = (MEMADDR)hookTo;
+	*((MEMADDR*)(hookMemory + 1)) = relativeAddress;
 
 	memcpy((MEMADDR*)(hookMemory + 5), &bytesBuffer[0], length);
 
-	*((MEMADDR*)(hookMemory + 5 + length)) = _byteswap_ulong(0xE9000000);
-	*((MEMADDR*)(hookMemory + 5 + length + 1)) = (MEMADDR)hookFrom + length;
-
 	*(MEMADDR*)returnAddress = hookMemory + 5;
+
+	relativeAddress = ((MEMADDR)hookFrom + length) - (hookMemory + 5 + length) - 5;
+
+	*((MEMADDR*)(hookMemory + 5 + length)) = _byteswap_ulong(0xE9000000);
+	*((MEMADDR*)(hookMemory + 5 + length + 1)) = relativeAddress;
 
 	memset(hookFrom, 0x90, length);
 
-	*((MEMADDR*)hookFrom) = _byteswap_ulong(0xE9000000);
-	*((MEMADDR*)((char*)hookFrom + 1)) = hookMemory;
+	relativeAddress = hookMemory - (MEMADDR)hookFrom - 5;
 
-	//MEMADDR relativeAddress = ((MEMADDR)hookTo - (MEMADDR)hookFrom);
-	//*((MEMADDR*)hookFrom) = _byteswap_ulong(0xE9000000);
-	//*((MEMADDR*)((char*)hookFrom + 1)) = relativeAddress;
+	*((MEMADDR*)hookFrom) = _byteswap_ulong(0xE9000000);
+	*((MEMADDR*)((char*)hookFrom + 1)) = relativeAddress;
+
 #endif
 
 	console.PrintDebugMsg("Return address: %p", (void*)*(MEMADDR*)returnAddress, MsgType::COMPLETE);
@@ -312,9 +323,10 @@ void Core::Hook(void* hookFrom, void* hookTo, void* returnAddress, int length)
 }
 
 /*
-* Update things here if needed.
+* Do things here if needed.
 * This does not block because the rest of the code should run on another
 * thread belonging to the main application through the hooked functions.
+* I mostly use this for delayed hooking.
 */
 void Core::Update()
 {
@@ -324,8 +336,8 @@ void Core::Update()
 	//
 	//	if (GetAsyncKeyState(VK_F4) && safeguard != true) // F4 button
 	//	{
+	//		Hook(targetResizeBuffersFunction, &ResizeBuffers, &newResizeBuffersReturn, resizeBuffersHookSize);
 	//		Hook(targetPresentFunction, &Present, &newPresentReturn, presentHookSize);
-	//		Hook(targetResizeBuffersFunction, &ResizeBuffers, &newResizeBuffersReturn, 16);
 	//		safeguard = true;
 	//	}
 	//	

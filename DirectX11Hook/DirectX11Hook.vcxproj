@@ -20,28 +20,24 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.h" />
+    <ClInclude Include="CustomAttributes.h" />
+    <ClInclude Include="CustomElements.h" />
     <ClInclude Include="DebugConsole.h" />
     <ClInclude Include="Fonts.h" />
-    <ClInclude Include="Mesh.h" />
     <ClInclude Include="Overlay.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="SigScanner.h" />
-    <ClInclude Include="Text.h" />
-    <ClInclude Include="TexturedBox.h" />
     <ClInclude Include="Textures.h" />
-    <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.cpp" />
+    <ClCompile Include="CustomOverlay.cpp" />
     <ClCompile Include="DebugConsole.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="Fonts.cpp" />
-    <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Overlay.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SigScanner.cpp" />
-    <ClCompile Include="Text.cpp" />
-    <ClCompile Include="TexturedBox.cpp" />
     <ClCompile Include="Textures.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -57,10 +53,6 @@
   <ItemGroup>
     <None Include="dxgi.def" />
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="hook_textures\texture.DDS" />
-    <Image Include="hook_textures\texture2.DDS" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders.hlsl">
@@ -182,6 +174,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>D3DCompiler.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -204,9 +197,9 @@
       <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\x64\Release\dxgi.dll" "E:\SteamLibrary\steamapps\common\Monster Hunter World"
-XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_textures" "E:\SteamLibrary\steamapps\common\Monster Hunter World\hook_textures\"
-XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_fonts" "E:\SteamLibrary\steamapps\common\Monster Hunter World\hook_fonts\"</Command>
+      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\x64\Release\dxgi.dll" "E:\Games\Divinity Original Sin 2\bin"
+XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_textures" "E:\Games\Divinity Original Sin 2\bin\hook_textures\"
+XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_fonts" "E:\Games\Divinity Original Sin 2\bin\hook_fonts\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

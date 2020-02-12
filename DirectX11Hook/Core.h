@@ -7,18 +7,20 @@
 #include <d3d11.h>
 #include <fstream>
 #include <string>
-#include "DebugConsole.h"
-#include "Renderer.h"
-#include "Mesh.h"
-#include "TexturedBox.h"
-#include "Textures.h"
 #include <comdef.h>
-#include "Text.h"
-#include "Fonts.h"
 #include <direct.h>
 #include <stdio.h>
+#include "DebugConsole.h"
+#include "Renderer.h"
+#include "Textures.h"
+#include "Fonts.h"
 #include "SigScanner.h"
 
+/*
+* MEMADDR helps us to handle the pointers in the Hook function more cleanly.
+* I found it leads to less casting than if we didn't use it.
+* Also it makes the 32-bit and 64-bit hooking more similar.
+*/
 #ifdef _WIN64
 typedef unsigned __int64 QWORD; 
 typedef QWORD MEMADDR; 
@@ -27,10 +29,14 @@ typedef DWORD MEMADDR;
 #endif
 
 /* 
-* A type definition of the DXGI present function, so we can cast memory addresses
-* to this function, this way we can call the function at the given memory address
-* and pass parameters to the registers and stack at the location in the correct way.
-* 64-bit Present actually uses the __fastcall calling convention, but the compiler changes
+* Here we have type definitions of the functions we want to hook. 
+* We do this so we can treat pointers as actual functions, in other words
+* we can call the function that the pointer is pointing to and pass 
+* parameters to them aswell, just like a normal function call.
+* 
+* Setting the proper calling convention is important (__stdcall).
+* It makes it so we can send function parameters into memory in the correct way.
+* 64-bit functions actually use the __fastcall calling convention, but the compiler changes
 * __stdcall to __fastcall automatically for 64-bit compilation.
 * A great resource on calling conventions: https://www.codeproject.com/Articles/1388/Calling-Conventions-Demystified
 */
@@ -40,24 +46,22 @@ typedef HRESULT(__stdcall* ResizeBuffersFunction)(UINT BufferCount, UINT Width, 
 class Core
 {
 private:
+	bool drawExamples = false;
+	bool showDebugConsole = false;
+	bool steamOverlayActive = false;
+	SigScanner scanner;
+
 	HMODULE originalDll;
 	MEMADDR targetDllBaseAddress;
 	MEMADDR targetPresentOffset;
 	MEMADDR targetResizeBuffersOffset;
 	PresentFunction* targetPresentFunction;
 	ResizeBuffersFunction* targetResizeBuffersFunction;
-	bool drawExamples = false;
-	bool showDebugConsole = false;
-	bool steamOverlayActive = false;
 	int presentHookSize;
 	int resizeBuffersHookSize;
 	const char* steamDllName;
 
-	std::vector<Mesh> thingsToDraw = std::vector<Mesh>();
-	std::vector<Text> textToDraw = std::vector<Text>();
-
 	std::vector<void*> allocatedMemory = std::vector<void*>();
-	SigScanner scanner;
 
 	void AllocateMemory(void** storePointer, int size);
 
@@ -68,8 +72,8 @@ public:
 	Renderer renderer;
 
 	void Init(HMODULE originalDll);
-	PresentFunction* FindPresentAddress(bool hookSteamOverlay);
 	ResizeBuffersFunction* FindResizeBuffersAddress(bool hookSteamOverlay);
+	PresentFunction* FindPresentAddress(bool hookSteamOverlay);
 	void Hook(void* hookFrom, void* hookTo, void* returnAddress, int bytes);
 	void Update();
 	void OnPresent(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);

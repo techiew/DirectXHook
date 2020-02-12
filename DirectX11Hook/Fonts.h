@@ -1,7 +1,7 @@
 #pragma once
+
 #include <vector>
 #include <d3d11.h>
-#include "DebugConsole.h"
 #include <SpriteBatch.h>
 #include <SpriteFont.h>
 #include <comdef.h>
@@ -9,18 +9,18 @@
 #include <fstream>
 #include <SpriteFont.h>
 #include <SpriteBatch.h>
+#include "DebugConsole.h"
 
 class Fonts
 {
 private:
+	Microsoft::WRL::ComPtr<ID3D11Device> device = nullptr;
 	DebugConsole* console;
 	std::vector<std::shared_ptr<DirectX::SpriteFont>> fonts;
-	Microsoft::WRL::ComPtr<ID3D11Device> device = nullptr;
 
 public:
-	Fonts() { };
-	Fonts(DebugConsole* console);
-	void SetDevice(ID3D11Device* device);
+	Fonts() {};
+	Fonts(ID3D11Device* device, DebugConsole* console);
 	int LoadFont(std::string filepath);
-	DirectX::SpriteFont* GetFont(int fontIndex);
+	DirectX::SpriteFont* Get(int fontIndex);
 };

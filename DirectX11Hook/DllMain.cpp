@@ -40,17 +40,6 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 	{
 		DisableThreadLibraryCalls(module);
 
-		//bool paused = true;
-		//while (paused)
-		//{
-		//
-		//	if (GetAsyncKeyState(VK_F4)) // F4 button
-		//	{
-		//		paused = false;
-		//	}
-		//
-		//}
-
 		thisDll = module;
 
 		// Load the correct version of dxgi.dll

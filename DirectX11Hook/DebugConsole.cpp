@@ -50,6 +50,13 @@ void DebugConsole::PrintDebugMsg(std::string msg, void* value, MsgType msgType)
 
 }
 
+void DebugConsole::PrintDebugMsg(std::string msg, float value)
+{
+	if (isDisabled) return;
+
+	printf(std::string("> " + msg + "\n").c_str(), value);
+}
+
 void DebugConsole::PrintHex(unsigned char hexValue)
 {
 	if (isDisabled) return;

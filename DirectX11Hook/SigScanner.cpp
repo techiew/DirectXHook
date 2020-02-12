@@ -1,12 +1,7 @@
 #include "SigScanner.h"
-#include <iostream>
 
 // I used this tutorial to make this, all credits to Guided Hacking
 //https://www.youtube.com/watch?v=S_SR5l_hquw
-
-SigScanner::SigScanner()
-{
-}
 
 MODULEINFO SigScanner::GetModuleInfo(char* szModule)
 {
@@ -44,8 +39,8 @@ void* SigScanner::FindPattern(const char module[], const char pattern[], const c
 	return 0;
 }
 
-// This one is used to scan the original dxgi.dll directly, using the HMODULE reference we stored after it was loaded.
-// We can't target it by name, since the name of our .dll is the same and we'll end up targeting our own .dll instead.
+// This one is used to scan the original dxgi.dll directly, using the HMODULE reference we stored after we loaded it.
+// We can't target it by name, since the name of our .dll is the same we will end up targeting our own .dll instead.
 void* SigScanner::FindPattern(HMODULE module, const char* pattern, const char* mask)
 {
 	MODULEINFO modInfo = { 0 };

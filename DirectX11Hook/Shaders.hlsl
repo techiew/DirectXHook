@@ -3,37 +3,42 @@ R""(
 Texture2D tex;
 SamplerState sampleType;
 
-struct VertexShaderInput
+cbuffer constantBuffer
+{
+    matrix wvp;
+};
+
+struct VS_Input
 {
     float4 pos : POSITION;
     float4 color : COLOR;
     float2 texcoord : TEXCOORD;
 };
 
-struct PixelShaderInput
+struct VS_Output
 {
     float4 pos : SV_POSITION;
     float4 color : COLOR;
     float2 texcoord : TEXCOORD;
 };
 
-PixelShaderInput VS(VertexShaderInput input)
+VS_Output VS(VS_Input input)
 {
-    PixelShaderInput psi;
-    psi.color = input.color;
-    psi.pos = input.pos;
-    psi.texcoord = input.texcoord;
-    return psi;
+    VS_Output vsout;
+    vsout.pos = mul(input.pos, wvp);
+    vsout.color = input.color;
+    vsout.texcoord = input.texcoord;
+    return vsout;
 }
 
-float4 PSTex(PixelShaderInput input) : SV_Target
+float4 PSTex(VS_Output input) : SV_Target
 {
     float4 textureColor;
     textureColor = tex.Sample(sampleType, input.texcoord);
     return textureColor;
 }
 
-float4 PS(PixelShaderInput input) : SV_Target
+float4 PS(VS_Output input) : SV_Target
 {
     return input.color;
 }

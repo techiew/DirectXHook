@@ -1,108 +1,421 @@
 #include "Overlay.h"
-#include "Renderer.h"
 
-using namespace DirectX;
-
-Overlay::Overlay(Renderer* renderer, DebugConsole* console)
+Overlay::Overlay(ID3D11Device* device, SpriteBatch* spriteBatch, DebugConsole* console, HWND window)
 {
-	textures = renderer->GetTextures();
-	fonts = renderer->GetFonts();
+	this->spriteBatch = std::shared_ptr<SpriteBatch>(spriteBatch);
 	this->console = console;
-	
+	this->window = window;
+	textures = Textures(device, console);
+	fonts = Fonts(device, console);
+
+	RECT hwndRect;
+	GetClientRect(this->window, &hwndRect);
+	windowWidth = hwndRect.right - hwndRect.left;
+	windowHeight = hwndRect.bottom - hwndRect.top;
+
+	uiPos.resize((ID::_NUMELEMENTS), XMFLOAT3(0.0f, 0.0f, 0.0f));
+	uiSize.resize((ID::_NUMELEMENTS), XMFLOAT2(100.0f, 100.0f));
+	uiAttrib.resize((ID::_NUMELEMENTS), nullptr);
+
+	Load();
 	ReadConfig();
+	SortByDepth();
+	console->PrintDebugMsg("Loading complete, now rendering...", nullptr, MsgType::STARTPROCESS);
 }
 
-void Overlay::Draw()
+void Overlay::Update()
 {
-	spriteBatch->Begin();
+	CheckMouseState();
 
-	if (DoBox(XMINT2(500, 500), XMINT2(100, 100), textures->GetTexture(0).Get(), nullptr))
-	{
-
-	}
-
-	//spriteBatch->Draw(textures->GetTexture(0).Get(), XMFLOAT2(100, 100));
-	//const char* text = "Overlay drawing here!";
-	//
-	//console->PrintDebugMsg("Addr renderer: %p", (void*)renderer);
-	//renderer->exampleFont->DrawString(spriteBatch.get(), text, XMFLOAT2(100, 100));
-
+	spriteBatch->Begin(SpriteSortMode_FrontToBack);
+	Draw();
 	spriteBatch->End();
-}
-
-bool Overlay::DoBox(DirectX::XMINT2 pos, DirectX::XMINT2 size, ID3D11ShaderResourceView* texture, bool* hover)
-{
-	RECT rect;
-	rect.left = pos.x;
-	rect.top = pos.y;
-	rect.right = size.x;
-	rect.bottom = size.y;
-	spriteBatch->Draw(textures->GetTexture(0).Get(), rect);
-	return false;
-}
-
-void Overlay::ReadValues()
-{
 }
 
 void Overlay::ReadConfig()
 {
 }
 
-void Overlay::LoadEverything()
+bool Overlay::DoBox(ID id, int texIndex, ID parent)
 {
-	console->PrintDebugMsg("Loading textures...", nullptr, MsgType::STARTPROCESS);
+	ID3D11ShaderResourceView* texture = textures.Get(texIndex);
+	if (texture == nullptr) return false;
 
-	// Example textures
-	textures->LoadTexture(".\\hook_textures\\texture.dds");
-	textures->LoadTexture(".\\hook_textures\\texture2.dds");
+	XMFLOAT3 pos = uiPos[id];
+	XMFLOAT2 size = uiSize[id];
 
-	console->PrintDebugMsg("Loading fonts...", nullptr, MsgType::STARTPROCESS);
+	bool clicked = false;
 
-	// Default font
-	fonts->LoadFont(".\\hook_fonts\\arial_22.spritefont");
+	// Check if element is currently being hovered over with the mouse 
+	// or if the mouse is currently locked on (dragging) this element.
+	if (id == hoveringOverID || (mouseLocked && activeID == id))
+	{
+		clicked = CheckElementClicked(id);
+	}
 
-	console->PrintDebugMsg("Loading complete, now rendering...", nullptr, MsgType::STARTPROCESS);
+	RECT rect;
+	XMFLOAT2 parentPos = XMFLOAT2(0.0f, 0.0f);
+
+	if (parent != ID::_NONE)
+	{
+		parentPos = XMFLOAT2(uiPos[(int)parent].x, uiPos[(int)parent].y);
+	}
+
+	rect.top = pos.y;
+	rect.left = pos.x;
+	rect.bottom = pos.y + size.y;
+	rect.right = pos.x + size.x;
+
+	spriteBatch->Draw(texture, rect, NULL, uiAttrib[id]->color, uiAttrib[id]->rotation, parentPos, DirectX::SpriteEffects_None, pos.z);
+
+	return clicked;
 }
 
-void Overlay::SetSpriteBatch(DirectX::SpriteBatch* spriteBatch)
+bool Overlay::DoText(ID id, int fontIndex, ID parent)
 {
-	this->spriteBatch = std::shared_ptr<SpriteBatch>(spriteBatch);
+	return false;
 }
 
-// Example text
-//Text test = Text("Hello there", 0.0f, 0.0f, 0, fonts->GetFont(0), renderer->GetWindowWidth(), renderer->GetWindowHeight());
-//test.SetPos(test.GetPos().x - test.GetTextMidpointX(), test.GetPos().y - test.GetTextMidpointY());
-
-
-//// Attempt to create vertex and index buffers for the given mesh
-//void Core::AddMeshForDrawing(Mesh mesh)
+//bool Overlay::DoBox(DirectX::XMFLOAT3 pos, DirectX::XMFLOAT2 size, int texIndex, float rotation, DirectX::SimpleMath::Color color, bool moveable, bool clickable, DirectX::SpriteEffects spriteEffects)
 //{
-//	HRESULT VBResult = renderer.CreateBufferForMesh(mesh.GetVertexDesc(), mesh.GetVertexSubData(), mesh.GetVertexBuffer());
-//	_com_error VBErr(VBResult);
-//	console->PrintDebugMsg("CreateBuffer (VB) HRESULT: %s", (void*)VBErr.ErrorMessage());
-//
-//	if (FAILED(VBResult))
-//	{
-//		console->PrintDebugMsg("Failed to create vertex buffer for mesh", nullptr, MsgType::FAILED);
-//		return;
-//	}
-//
-//	HRESULT IBResult = renderer.CreateBufferForMesh(mesh.GetIndexDesc(), mesh.GetIndexSubData(), mesh.GetIndexBuffer());
-//	_com_error IBErr(IBResult);
-//	console->PrintDebugMsg("CreateBuffer (IB) HRESULT: %s", (void*)IBErr.ErrorMessage());
-//
-//	if (FAILED(IBResult))
-//	{
-//		console->PrintDebugMsg("Failed to create index buffer for mesh", nullptr, MsgType::FAILED);
-//		return;
-//	}
-//
-//	console->PrintDebugMsg("Successfully loaded mesh for rendering: %s", (void*)mesh.GetMeshClassName().c_str());
-//	thingsToDraw.push_back(mesh);
+//	return false;
 //}
 //
-//void Core::AddTextForDrawing(Text text)
+//bool Overlay::DoText(const char* text, DirectX::XMFLOAT3 pos, float size, int fontIndex, float rotation, DirectX::SimpleMath::Color color)
 //{
-//	textToDraw.push_back(text);
+//	SpriteFont* font = fonts.Get(fontIndex);
+//	if (font == nullptr) return false;
+//	font->DrawString(spriteBatch.get(), text, XMFLOAT2(pos.x, pos.y), color, 0.0f, XMFLOAT2(0.0f, 0.0f), size, DirectX::SpriteEffects_None, pos.z);
+//	return false;
 //}
+
+
+void Overlay::CheckMouseState()
+{
+	POINT pos;
+	GetCursorPos(&pos);
+	ScreenToClient(window, &pos);
+
+	deltaMousePos = XMFLOAT2(mousePos.x - pos.x, mousePos.y - pos.y);
+	mousePos = XMFLOAT2(pos.x, pos.y);
+
+	if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+	{
+
+		if (!mouseLeftPressed)
+		{
+			mouseLeftPressedTime = GetTimeMs();
+		}
+
+		mouseLeftPressed = true;
+	}
+	else
+	{
+		mouseLocked = false;
+		mouseLeftPressed = false;
+	}
+
+	int elementID = ID::_NONE;
+	float highestZ = 0.0f;
+
+	for (int i = 0; i < uiPos.size(); i++)
+	{
+
+		if (IsMouseInside(uiPos[i], uiSize[i]))
+		{
+
+			if (uiPos[i].z >= highestZ)
+			{
+				highestZ = uiPos[i].z;
+				elementID = i;
+			}
+
+		}
+
+	}
+
+	hoveringOverID = elementID;
+}
+
+bool Overlay::IsMouseInside(DirectX::XMFLOAT3 origin, DirectX::XMFLOAT2 area)
+{
+
+	if (mousePos.x < (origin.x + area.x) && mousePos.x >(origin.x))
+	{
+
+		if (mousePos.y < (origin.y + area.y) && mousePos.y >(origin.y))
+		{
+			return true;
+		}
+
+	}
+
+	return false;
+}
+
+bool Overlay::CheckElementClicked(int element)
+{
+	if (!uiAttrib[element]->clickable) return false;
+
+	if (mouseLeftPressed)
+	{
+
+		if (mouseLocked)
+		{
+
+			if (activeID == element)
+			{
+
+				if (stopMoreClicksOnID != element)
+				{
+					stopMoreClicksOnID = element;
+					OnClick(element);
+				}
+
+				if (uiAttrib[element]->moveable) DragElementWithMouse(element);
+				return true;
+			}
+
+			return false;
+		}
+
+		mouseLocked = true;
+		activeID = element;
+		stopMoreClicksOnID = ID::_NONE;
+	}
+	else if (activeID == element)
+	{
+
+		if (GetTimeMs().count() - mouseLeftPressedTime.count() < 400)
+		{
+
+			if (stopMoreClicksOnID != element)
+			{
+				stopMoreClicksOnID = element;
+				OnClick(element);
+				return true;
+			}
+
+		}
+
+	}
+
+}
+
+void Overlay::OnClick(int element)
+{
+	if (uiPos[element].z == ((float)(uiPos.size() - 1)) / numLayers) return;
+
+	float oldZ = uiPos[element].z;
+	uiPos[element].z = ((float)(uiPos.size() - 1)) / numLayers;
+
+	for (int i = 0; i < uiPos.size(); i++)
+	{
+		if (i == element) continue;
+		if (uiPos[i].z > oldZ) uiPos[i].z -= (1.0f / numLayers);
+	}
+
+}
+
+void Overlay::DragElementWithMouse(int element)
+{
+	uiPos[element] = XMFLOAT3(uiPos[element].x - deltaMousePos.x, uiPos[element].y - deltaMousePos.y, uiPos[element].z);
+}
+
+void Overlay::SortByDepth()
+{
+
+	struct IndexWithDepth
+	{
+		int i;
+		float z;
+
+		IndexWithDepth(int _i, float _z) : i(_i), z(_z) {};
+
+		bool operator < (const IndexWithDepth& comp) const
+		{
+			return (z < comp.z);
+		};
+	};
+
+	std::vector<IndexWithDepth> zBuffer = std::vector<IndexWithDepth>();
+
+	for (int i = 0; i < uiPos.size(); i++)
+	{
+		IndexWithDepth indexWithDepth = { i, uiPos[i].z };
+		zBuffer.push_back(indexWithDepth);
+	}
+
+	std::sort(zBuffer.begin(), zBuffer.end(), std::less<IndexWithDepth>());
+
+	for (int i = 0; i < zBuffer.size(); i++)
+	{
+		uiPos[zBuffer[i].i].z = (float)i / numLayers;
+	}
+
+}
+
+XMFLOAT2 Overlay::ToPixels(float ndcX, float ndcY)
+{
+	return XMFLOAT2(MapNumberInRange(ndcX, -1.0f, 1.0f, 0, windowWidth), MapNumberInRange(ndcY, -1.0f, 1.0f, 0, windowHeight));
+}
+
+DirectX::XMFLOAT2 Overlay::ToNDC(float pixelsX, float pixelsY)
+{
+	return XMFLOAT2(MapNumberInRange(pixelsX, 0, windowWidth, -1.0f, 1.0f), MapNumberInRange(pixelsY, 0, windowHeight, -1.0f, 1.0f));
+}
+
+DirectX::SimpleMath::Color Overlay::RGBAColor(float r, float g, float b, float a)
+{
+	float _r = MapNumberInRange(r, 0.0f, 255.0f, 0.0f, 1.0f);
+	float _g = MapNumberInRange(g, 0.0f, 255.0f, 0.0f, 1.0f);
+	float _b = MapNumberInRange(b, 0.0f, 255.0f, 0.0f, 1.0f);
+	float _a = MapNumberInRange(a, 0.0f, 255.0f, 0.0f, 1.0f);
+	return Color(r, g, b, a);
+}
+
+float Overlay::MapNumberInRange(float number, float inputStart, float inputEnd, float outputStart, float outputEnd)
+{
+	return outputStart + ((outputEnd - outputStart) / (inputEnd - inputStart)) * (number - inputStart);
+}
+
+/*
+*
+* Setters & getters ------------------------------------------------------------------------------
+*
+*/
+
+void Overlay::Signup(ID id)
+{
+	configSignups.push_back(id);
+}
+
+void Overlay::SetDef(ID id, DirectX::XMFLOAT3 pos, DirectX::XMFLOAT2 size)
+{
+	uiPos[id] = pos;
+	uiSize[id] = size;
+	uiAttrib[id] = std::make_shared<Attributes>(Attributes());
+}
+
+void Overlay::SetDef(ID id, DirectX::XMFLOAT3 pos, DirectX::XMFLOAT2 size, Attributes attrib)
+{
+	uiPos[id] = pos;
+	uiSize[id] = size;
+	uiAttrib[id] = std::make_shared<Attributes>(Attributes(attrib));
+}
+
+void Overlay::SetAttrib(ID id, Attributes attrib)
+{
+	uiAttrib[id] = std::make_shared<Attributes>(Attributes(attrib));
+}
+
+void Overlay::SetPos(ID id, DirectX::XMFLOAT3 pos)
+{
+	uiPos[id] = pos;
+}
+
+void Overlay::SetSize(ID id, DirectX::XMFLOAT2 size)
+{
+	uiSize[id] = size;
+}
+
+void Overlay::SetColor(ID id, Color color)
+{
+	if (GetAttrib(id) == nullptr) return;
+	GetAttrib(id)->color = color;
+}
+
+void Overlay::SetRotation(ID id, float rotation)
+{
+	if (GetAttrib(id) == nullptr) return;
+	GetAttrib(id)->rotation = rotation;
+}
+
+void Overlay::SetWindowHandle(HWND window)
+{
+	this->window = window;
+	RECT hwndRect;
+	GetClientRect(this->window, &hwndRect);
+	windowWidth = hwndRect.right - hwndRect.left;
+	windowHeight = hwndRect.bottom - hwndRect.top;
+}
+
+DirectX::XMFLOAT3 Overlay::GetPos(ID id)
+{
+	return uiPos[id];
+}
+
+DirectX::XMFLOAT2 Overlay::GetSize(ID id)
+{
+	return uiSize[id];
+}
+
+Attributes* Overlay::GetAttrib(ID id)
+{
+	return uiAttrib[id].get();
+}
+
+DirectX::XMFLOAT2 Overlay::GetMousePos()
+{
+	return mousePos;
+}
+
+DirectX::XMFLOAT2 Overlay::GetDeltaMousePos()
+{
+	return deltaMousePos;
+}
+
+std::chrono::milliseconds Overlay::GetMouseLeftPressTime()
+{
+	return mouseLeftPressedTime;
+}
+
+std::chrono::milliseconds Overlay::GetMouseRightPressTime()
+{
+	return mouseRightPressedTime;
+}
+
+bool Overlay::IsMouseLeftPressed()
+{
+	return mouseLeftPressed;
+}
+
+bool Overlay::IsMouseRightPressed()
+{
+	return mouseRightPressed;
+}
+
+bool Overlay::IsMouseLockedOnElement()
+{
+	return mouseLocked;
+}
+
+int Overlay::GetActiveID()
+{
+	return activeID;
+}
+
+int Overlay::GetHoveringOverID()
+{
+	return hoveringOverID;
+}
+
+int Overlay::GetStopClicksOnID()
+{
+	return stopMoreClicksOnID;
+}
+
+int Overlay::GetWindowWidth()
+{
+	return windowWidth;
+}
+
+int Overlay::GetWindowHeight()
+{
+	return windowHeight;
+}
+
+std::chrono::milliseconds Overlay::GetTimeMs()
+{
+	return duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+}
