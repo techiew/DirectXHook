@@ -326,7 +326,7 @@ void Core::Hook(void* hookFrom, void* hookTo, void* returnAddress, int length)
 * Do things here if needed.
 * This does not block because the rest of the code should run on another
 * thread belonging to the main application through the hooked functions.
-* I mostly use this for delayed hooking.
+* I've mostly used this for delayed hooking.
 */
 void Core::Update()
 {

@@ -8,8 +8,6 @@ namespace CustomElements
 	{
 		DOGGO1,
 		DOGGO2,
-		DOGGO3,
-		DOGGO4,
 
 		_NUMELEMENTS,
 		_NONE
@@ -18,7 +16,6 @@ namespace CustomElements
 	// Texture IDs
 	struct Tex
 	{
-		int none;
 		int doggo1;
 		int doggo2;
 	};

@@ -43,7 +43,7 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 		thisDll = module;
 
 		// Load the correct version of dxgi.dll
-		// System32 is 64 bit and SysWOW64 is 32 bit... don't ask me why
+		// System32 is for 64 bit and SysWOW64 is for 32 bit... don't ask me why
 #ifdef _WIN64
 		originalDll = LoadLibrary("C:\\Windows\\System32\\dxgi.dll");
 #else
