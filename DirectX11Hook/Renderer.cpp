@@ -6,7 +6,7 @@ using namespace DirectX;
 /*
 * We load the shaders at compile time into a constant (shaderData) by converting
 * the shader code file into a string. By doing this we don't need to bring the
-* shader file around next to our .dll for it to get loaded, because it's embedded 
+* shader file around next to our .dll file for it to load, because it's embedded 
 * like this instead. 
 * 
 * Found how to do this here: 
@@ -16,7 +16,11 @@ const char* shaderData = {
 #include "Shaders.hlsl"
 };
 
-
+/*
+* DISCLAIMER: 
+* Around 80% of the code in this file is dedicated to rendering an example triangle
+* and example text in DirectX, and has nothing to do with the custom overlay.
+*/
 
 Renderer::Renderer(DebugConsole* console, bool drawExamples)
 {
@@ -107,7 +111,7 @@ void Renderer::Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 		DrawExampleText(); // Same but with text
 	}
 
-	overlay.Update();
+	overlay.Render();
 }
 
 void Renderer::CreatePipeline()

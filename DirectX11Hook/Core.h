@@ -17,9 +17,7 @@
 #include "SigScanner.h"
 
 /*
-* MEMADDR helps us to handle the pointers in the Hook function more cleanly.
-* I found it leads to less casting than if we didn't use it.
-* Also it makes the 32-bit and 64-bit hooking more similar.
+* The MEMADDR type helps us to handle the pointers in the Hook function more cleanly.
 */
 #ifdef _WIN64
 typedef unsigned __int64 QWORD; 
@@ -30,9 +28,9 @@ typedef DWORD MEMADDR;
 
 /* 
 * Here we have type definitions of the functions we want to hook. 
-* We do this so we can treat pointers as actual functions, in other words
+* We do this so we can treat pointers as functions, in other words
 * we can call the function that the pointer is pointing to and pass 
-* parameters to them aswell, just like a normal function call.
+* parameters to it aswell, just like a normal function call.
 * 
 * Setting the proper calling convention is important (__stdcall).
 * It makes it so we can send function parameters into memory in the correct way.

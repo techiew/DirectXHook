@@ -1,6 +1,6 @@
 #include "SigScanner.h"
 
-// I used this tutorial to make this, all credits to Guided Hacking
+// I used this tutorial to make this, all credit to Guided Hacking
 //https://www.youtube.com/watch?v=S_SR5l_hquw
 
 MODULEINFO SigScanner::GetModuleInfo(char* szModule)

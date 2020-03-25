@@ -6,24 +6,27 @@ namespace CustomElements
 	// IDs for UI elements
 	enum ID
 	{
-		DOGGO1,
-		DOGGO2,
+		MOUSE,
+		WINDOW_MAIN,
+		TEXT_DPS,
 
+		// Put all new elements before these last two
 		_NUMELEMENTS,
 		_NONE
 	};
 
 	// Texture IDs
-	struct Tex
+	struct Texture
 	{
-		int doggo1;
-		int doggo2;
+
 	};
 
 	// Font IDs
 	struct Font
 	{
-		int arial;
+		// Default font, make sure to load it like this first to use it
+		// font.arial = fonts.LoadFont(".\\hook_fonts\\arial_22.spritefont");
+		int arial; 
 	};
 
 }

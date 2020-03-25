@@ -9,7 +9,8 @@ enum MsgType
 	STARTPROCESS,
 	PROGRESS,
 	COMPLETE,
-	FAILED
+	FAILED,
+	INLINE
 };
 
 class DebugConsole

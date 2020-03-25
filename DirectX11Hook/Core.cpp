@@ -58,12 +58,13 @@ void Core::Init(HMODULE originalDll)
 
 	console.PrintDebugMsg("Initializing hook...", nullptr, MsgType::STARTPROCESS);
 
+	// Print the current working directory
 	char currentPath[260];
 	console.PrintDebugMsg("Current working directory: %s", _getcwd(currentPath, sizeof(currentPath)));
 
 	targetDllBaseAddress = (MEMADDR)originalDll;
 
-	// Check if the steam overlay is enabled
+	// Check if the Steam overlay is active
 #ifdef _WIN64
 	HMODULE gorModule = GetModuleHandle("gameoverlayrenderer64.dll");
 	steamDllName = "gameoverlayrenderer64.dll";
@@ -82,10 +83,13 @@ void Core::Init(HMODULE originalDll)
 		steamOverlayActive = true;
 	}
 
+	// Find the function addresses that we need (also gets the offsets from the .dll base, for debugging purposes)
 	targetResizeBuffersFunction = FindResizeBuffersAddress(steamOverlayActive);
 	targetPresentFunction = FindPresentAddress(steamOverlayActive);
 	targetPresentOffset = (MEMADDR)targetPresentFunction - targetDllBaseAddress;
 	targetResizeBuffersOffset = (MEMADDR)targetResizeBuffersFunction - targetDllBaseAddress;
+
+	if (targetResizeBuffersFunction == 0 || targetPresentFunction == 0) return;
 
 	if (steamOverlayActive)
 	{
@@ -129,7 +133,7 @@ void Core::AllocateMemory(void** storePointer, int size)
 // Signature scan for ResizeBuffers
 ResizeBuffersFunction* Core::FindResizeBuffersAddress(bool hookSteamOverlay)
 {
-	console.PrintDebugMsg("Sigscanning for address of ResizeBuffers...", nullptr);
+	console.PrintDebugMsg("Sigscanning for address of ResizeBuffers...");
 	const char* bytes;
 	const char* mask;
 	int offset = 0;
@@ -170,13 +174,18 @@ ResizeBuffersFunction* Core::FindResizeBuffersAddress(bool hookSteamOverlay)
 		resizeBuffersAddress = (char*)scanner.FindPattern(originalDll, bytes, mask) + offset;
 	}
 
+	if (resizeBuffersAddress == 0)
+	{
+		console.PrintDebugMsg("ResizeBuffers address was not found.", nullptr, MsgType::FAILED);
+	}
+
 	return (ResizeBuffersFunction*)resizeBuffersAddress;
 }
 
 // Signature scan for Present
 PresentFunction* Core::FindPresentAddress(bool hookSteamOverlay)
 {
-	console.PrintDebugMsg("Sigscanning for address of Present...", nullptr);
+	console.PrintDebugMsg("Sigscanning for address of Present...");
 	const char* bytes;
 	const char* mask;
 	int offset = 0;
@@ -217,6 +226,11 @@ PresentFunction* Core::FindPresentAddress(bool hookSteamOverlay)
 		presentAddress = (char*)scanner.FindPattern(originalDll, bytes, mask) + offset;
 	}
 
+	if (presentAddress == 0)
+	{
+		console.PrintDebugMsg("Present address was not found.", nullptr, MsgType::FAILED);
+	}
+
 	return (PresentFunction*)presentAddress;
 }
 
@@ -243,23 +257,22 @@ void Core::Hook(void* hookFrom, void* hookTo, void* returnAddress, int length)
 	console.PrintDebugMsg("Size: %i", (void*)bytesBuffer.size());
 
 	/*
-	* We will now place an absolute 64-bit jump (0xFF25000000000000) which jumps to our assembly code
-	* Our assembly code contains the instructions that will be overwritten after we place said jump.
-	* It also handles jumping to the new function we are detouring to and then handles jumping back to the
-	* original code. The space for this assembly code is allocated manually and the assembly
-	* instructions themselves are created by writing bytes directly into memory.
+	* We will now place an absolute 64-bit jump (0xFF25000000000000) which jumps to our assembly code.
+	* The assembly code contains the instructions that will be overwritten after we place said jump.
+	* It also handles jumping to the new function that we are detouring to and then handles jumping
+	* back to the original code. The space for this assembly code is allocated manually beforehand
+	* and the assembly instructions themselves are created by writing bytes directly into memory.
 	*
-	* _byteswap is used to make the hex more readable, normally the bytes would have to be
-	* inverted when we write them in.
-	*
-	* We fill the _byteswap function with a full 8 bytes, otherwise it returns garbage
+	* _byteswap is only used to make the hex more readable, normally the bytes would have to be
+	* inverted when we write them in. We have to fill the _byteswap function with a full 4 or 8 bytes, 
+	* otherwise it returns garbage.
 	*
 	* An absolute 64-bit jump instruction (0xFF25000000000000) uses only 6 bytes on its own in memory,
 	* but when it's called it will read an 8-byte address starting from the following memory address.
 	*
-	* If it's 32-bit, we do a normal, relative jump (0xE9000000)
+	* If we are building for 32-bit, we do a normal, relative jump (0xE9000000)
 	*
-	* Resource:
+	* Resource for assembly jmps:
 	* https://www.felixcloutier.com/x86/jmp
 	*/
 
@@ -325,8 +338,8 @@ void Core::Hook(void* hookFrom, void* hookTo, void* returnAddress, int length)
 /*
 * Do things here if needed.
 * This does not block because the rest of the code should run on another
-* thread belonging to the main application through the hooked functions.
-* I've mostly used this for delayed hooking.
+* thread belonging to the main application that is running the hooked functions.
+* I've mostly used this function for delayed hooking.
 */
 void Core::Update()
 {

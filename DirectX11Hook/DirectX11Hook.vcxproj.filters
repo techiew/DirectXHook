@@ -18,6 +18,9 @@
     <Filter Include="Source Files\Assembly Code">
       <UniqueIdentifier>{d30d6925-63ee-46ed-95cd-8e5fe773c52f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Custom">
+      <UniqueIdentifier>{42a17e3e-2980-4455-8ecb-5e67773b07ab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.h">
@@ -41,10 +44,16 @@
     <ClInclude Include="Overlay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CustomElements.h">
+    <ClInclude Include="Attributes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CustomAttributes.h">
+      <Filter>Custom</Filter>
+    </ClInclude>
+    <ClInclude Include="CustomElements.h">
+      <Filter>Custom</Filter>
+    </ClInclude>
+    <ClInclude Include="MemReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -74,6 +83,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CustomOverlay.cpp">
+      <Filter>Custom</Filter>
+    </ClCompile>
+    <ClCompile Include="MemReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

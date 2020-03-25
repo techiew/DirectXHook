@@ -20,10 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core.h" />
+    <ClInclude Include="Attributes.h" />
     <ClInclude Include="CustomAttributes.h" />
     <ClInclude Include="CustomElements.h" />
     <ClInclude Include="DebugConsole.h" />
     <ClInclude Include="Fonts.h" />
+    <ClInclude Include="MemReader.h" />
     <ClInclude Include="Overlay.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="SigScanner.h" />
@@ -35,6 +37,7 @@
     <ClCompile Include="DebugConsole.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="Fonts.cpp" />
+    <ClCompile Include="MemReader.cpp" />
     <ClCompile Include="Overlay.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="SigScanner.cpp" />
@@ -197,9 +200,9 @@
       <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\x64\Release\dxgi.dll" "E:\Games\Divinity Original Sin 2\bin"
-XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_textures" "E:\Games\Divinity Original Sin 2\bin\hook_textures\"
-XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_fonts" "E:\Games\Divinity Original Sin 2\bin\hook_fonts\"</Command>
+      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\x64\Release\dxgi.dll" "E:\SteamLibrary\steamapps\common\Monster Hunter World"
+XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_textures" "E:\SteamLibrary\steamapps\common\Monster Hunter World\hook_textures\"
+XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_fonts" "E:\SteamLibrary\steamapps\common\Monster Hunter World\hook_fonts\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

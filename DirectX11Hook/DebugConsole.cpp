@@ -46,6 +46,9 @@ void DebugConsole::PrintDebugMsg(std::string msg, void* value, MsgType msgType)
 	case(FAILED): 
 		printf(std::string(" [!] " + msg + "\n").c_str(), value);
 		break;
+	case(INLINE):
+		printf(std::string(msg).c_str(), value);
+		break;
 	}
 
 }
