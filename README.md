@@ -1,2 +1,2 @@
 # DirectX11Hook
-stay tuned
+stay tuned, will make proper documentation soon
