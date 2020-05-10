@@ -3,3 +3,5 @@ This DirectX hook can take control of the DirectX 11 renderer in 3D games and ap
 
 [![Youtube Video](https://github.com/techiew/DirectX11Hook/blob/master/thumbnail.png)](https://youtu.be/kzF1YnqXKXY)
 
+I'll be adding proper documentation soon, working on other stuff.
+
