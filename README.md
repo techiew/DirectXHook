@@ -8,5 +8,6 @@ Below is a video of the hook hooking the renderer in Monster Hunter World.
 I'll be adding proper documentation at some point, working on other stuff.
 
 **Tested in and confirmed working in multiple games (both 32-bit and 64-bit):**
-Monster Hunter World, Kenshi, Witcher 3, Divinity Original Sin 2, Metro 2033, etc.
+
+Monster Hunter World, Kenshi, Witcher 3, Divinity Original Sin 2, Metro 2033, and more.
 
