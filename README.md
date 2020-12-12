@@ -9,5 +9,5 @@ I'll be adding proper documentation at some point, working on other stuff.
 
 **Tested in and confirmed working for multiple games (both 32-bit and 64-bit):**
 
-Monster Hunter World, Kenshi, Witcher 3, Divinity Original Sin 2, Metro 2033, and more.
+Monster Hunter World, Kenshi, Witcher 3, Divinity Original Sin 2, Metro 2033, and more. The hook should work for everything, but some games might contain edge cases in which the hook does not work.
 
