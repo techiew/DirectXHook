@@ -1,6 +1,7 @@
 
 packages/
 x64/
+Release/
 .vs/
 DirectX11Hook/x64/
 DirectX11Hook/packages.config
@@ -12,10 +13,6 @@ DirectX11Hook/packages.config
 *.tlog
 
 *.ipdb
-
-Release/dxgi.dll
-
-Release/dxgi.iobj
 
 *.pdb
 
