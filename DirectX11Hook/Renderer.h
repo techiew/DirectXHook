@@ -12,7 +12,7 @@
 #include "DebugConsole.h"
 #include "Textures.h"
 #include "Fonts.h"
-#include "Overlay.h"
+//#include "Overlay.h"
 
 // ComPtr is an official smart pointer used for COM objects, DirectX objects are COM objects
 // https://docs.microsoft.com/en-us/cpp/cppcx/wrl/comptr-class?view=vs-2019
@@ -20,10 +20,23 @@
 
 class Renderer
 {
+public:
+	Renderer();
+	bool Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
+	void Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
+	void OnPresent(IDXGISwapChain *swapChain, UINT syncInterval, UINT flags);
+	void OnResizeBuffers(UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
+	void DrawExamples(bool draw);
+	bool IsInitialized();
+	int GetWindowWidth();
+	int GetWindowHeight();
+	ID3D11Device* GetDevice();
+
 private:
-	DebugConsole* console;
-	Overlay overlay;
+	DebugConsole console;
+	//Overlay overlay;
 	bool drawExamples = false;
+	bool examplesLoaded = false;
 	bool initialized = false;
 	bool firstInit = true;
 	int windowWidth, windowHeight;
@@ -81,16 +94,4 @@ private:
 	void CreateExampleFont();
 	void DrawExampleTriangle();
 	void DrawExampleText();
-
-public:
-	Renderer() {};
-	Renderer(DebugConsole* console, bool drawExamples);
-	bool Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
-	void Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
-	void OnPresent(IDXGISwapChain *swapChain, UINT syncInterval, UINT flags);
-	void OnResizeBuffers(UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
-	bool IsInitialized();
-	int GetWindowWidth();
-	int GetWindowHeight();
-	ID3D11Device* GetDevice();
 };

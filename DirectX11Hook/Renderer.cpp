@@ -8,18 +8,17 @@ const char* shaderData = {
 #include "Shaders.hlsl"
 };
 
-Renderer::Renderer(DebugConsole* console, bool drawExamples)
+Renderer::Renderer()
 {
-	this->console = console;
-	this->drawExamples = drawExamples;
+	console = DebugConsole();
 }
 
 bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 {
-
+	
 	if (firstInit)
 	{
-		console->PrintDebugMsg("Initializing renderer...", nullptr, MsgType::STARTPROCESS);
+		console.Print("Initializing renderer...", MsgType::STARTPROCESS);
 		HRESULT getDevice = swapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
 
 		if (SUCCEEDED(getDevice))
@@ -35,7 +34,7 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 	}
 	else
 	{
-		console->PrintDebugMsg("Resizing buffers...", nullptr, MsgType::STARTPROCESS);
+		console.Print("Resizing buffers...", MsgType::STARTPROCESS);
 	}
 
 	DXGI_SWAP_CHAIN_DESC desc;
@@ -46,8 +45,8 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 	GetClientRect(desc.OutputWindow, &hwndRect);
 	windowWidth = hwndRect.right - hwndRect.left;
 	windowHeight = hwndRect.bottom - hwndRect.top;
-	console->PrintDebugMsg("Window width: %i", (void*)windowWidth);
-	console->PrintDebugMsg("Window height: %i", (void*)windowHeight);
+	console.Print("Window width: %i", (void*)windowWidth);
+	console.Print("Window height: %i", (void*)windowHeight);
 
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
 	viewport.Width = windowWidth;
@@ -64,20 +63,12 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 
 	if (firstInit)
 	{
-
-		if (drawExamples)
-		{
-			CreatePipeline();
-			CreateExampleTriangle();
-			CreateExampleFont();
-		}
-
-		console->PrintDebugMsg("Successfully initialized the renderer", nullptr, MsgType::COMPLETE);
-
-		overlay = Overlay(device.Get(), spriteBatch.get(), console, desc.OutputWindow);
+		console.Print("Successfully initialized the renderer", MsgType::COMPLETE);
+		console.Print("Now rendering...", MsgType::STARTPROCESS);
+		//overlay = Overlay(device.Get(), spriteBatch.get(), console, desc.OutputWindow);
 	}
 
-	overlay.SetWindowHandle(desc.OutputWindow);
+	//overlay.SetWindowHandle(desc.OutputWindow);
 
 	initialized = true;
 	firstInit = false;
@@ -86,18 +77,25 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 
 void Renderer::Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 {
-	if (!initialized) return;
-
 	context->OMSetRenderTargets(1, mainRenderTargetView.GetAddressOf(), 0);
 	context->RSSetViewports(1, &viewport);
 
 	if (drawExamples)
 	{
+
+		if (!examplesLoaded)
+		{
+			CreatePipeline();
+			CreateExampleTriangle();
+			CreateExampleFont();
+			examplesLoaded = true;
+		}
+
 		DrawExampleTriangle(); // Example triangle for testing
 		DrawExampleText(); // Same but with text
 	}
 
-	overlay.Render();
+	//overlay.Render();
 }
 
 void Renderer::CreatePipeline()
@@ -157,7 +155,7 @@ void Renderer::CreatePipeline()
 
 ComPtr<ID3DBlob> Renderer::LoadShader(const char* shader, std::string targetShaderVersion, std::string shaderEntry)
 {
-	console->PrintDebugMsg("Loading shader: %s", (void*)shaderEntry.c_str());
+	console.Print("Loading shader: %s", (void*)shaderEntry.c_str());
 	ComPtr<ID3DBlob> errorBlob = nullptr;
 	ComPtr<ID3DBlob> shaderBlob;
 
@@ -167,11 +165,10 @@ ComPtr<ID3DBlob> Renderer::LoadShader(const char* shader, std::string targetShad
 	{
 		char error[256]{ 0 };
 		memcpy(error, errorBlob->GetBufferPointer(), errorBlob->GetBufferSize());
-		console->PrintDebugMsg("Shader error: %s", (void*)error, MsgType::FAILED);
+		console.Print("Shader error: %s", (void*)error, MsgType::FAILED);
 		return nullptr;
 	}
 
-	console->PrintDebugMsg("Shader loaded");
 	return shaderBlob;
 }
 
@@ -268,7 +265,7 @@ void Renderer::CreateExampleFont()
 	}
 	else
 	{
-		console->PrintDebugMsg("Failed to load the example font", nullptr, MsgType::FAILED);
+		console.Print("Failed to load the example font", MsgType::FAILED);
 	}
 
 }
@@ -313,7 +310,7 @@ void Renderer::DrawExampleTriangle()
 
 	if (hit == 2)
 	{
-		console->PrintDebugMsg("Hit the corner!");
+		console.Print("Hit the corner!");
 	}
 
 	counter += 0.01f;
@@ -428,6 +425,11 @@ void Renderer::OnResizeBuffers(UINT bufferCount, UINT width, UINT height, DXGI_F
 {
 	initialized = false;
 	mainRenderTargetView.ReleaseAndGetAddressOf();
+}
+
+void Renderer::DrawExamples(bool draw)
+{
+	drawExamples = draw;
 }
 
 bool Renderer::IsInitialized()

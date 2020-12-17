@@ -1,11 +1,16 @@
 #include <Windows.h>
 #include <iostream>
-#include "Core.h"
+#include "DX11Hook.h"
 
 /* 
 * This .dll is designed to be a proxy .dll
 * A good resource on what a proxy .dll is:
 * https://kevinalmansa.github.io/application%20security/DLL-Proxying/
+*/
+
+/*
+* JmpToAddr is a function coded in assembly which is taken from either
+* JmpToAddr64.asm or JmpToAddr.asm as decided by the macro below.
 */
 
 #ifdef _WIN64
@@ -14,22 +19,15 @@
 #define JmpToAddr JmpToAddr()
 #endif
 
-/* 
-* JmpToAddr is a function coded in assembly which is defined in either 
-* JmpToAddr64.asm or JmpToAddr.asm as decided by the macro above.
-*/
 extern "C" int JmpToAddr;
 
-HMODULE thisDll = 0;
 HMODULE originalDll = 0;
 FARPROC procAddresses[21]; // Original .dll function addresses
 
-Core core = Core();
-
 DWORD WINAPI MainThread(LPVOID lpParam)
 {
-	core.Init(originalDll);
-
+	DX11Hook hook = DX11Hook();
+	hook.Hook(originalDll);
 	return S_OK;
 }
 
@@ -40,10 +38,8 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 	{
 		DisableThreadLibraryCalls(module);
 
-		thisDll = module;
-
-		// Load the correct version of dxgi.dll
-		// System32 is for 64 bit and SysWOW64 is for 32 bit... don't ask me why
+		// Loads the correct version of dxgi.dll
+		// System32 is for 64 bit and SysWOW64 is for 32 bit, no idea why
 #ifdef _WIN64
 		originalDll = LoadLibrary("C:\\Windows\\System32\\dxgi.dll");
 #else
@@ -75,7 +71,7 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 		procAddresses[19] = GetProcAddress(originalDll, "SetAppCompatStringPointer");
 		procAddresses[20] = GetProcAddress(originalDll, "UpdateHMDEmulationStatus");
 
-		// Start hooking on a new thread
+		// Start hooking on a new thread inside the current process
 		CreateThread(0, 0x1000, &MainThread, 0, 0, NULL);
 	}
 	else if (reason == DLL_PROCESS_DETACH)
@@ -87,10 +83,9 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 	return 1;
 }
 
-
 /* 
-* These are the functions our .dll exports, 
-* we jump to the real .dll's functions to do these for us.
+* These are the functions our .dll exports for applications to use, 
+* we jump to the real .dll's functions to perform these for us.
 * I used a third-party tool to automatically create a template proxy .dll,
 * https://www.codeproject.com/Articles/1179147/ProxiFy-Automatic-Proxy-DLL-Generation
 * By using this you don't have to manually write all the exports or the module definition file (.def)

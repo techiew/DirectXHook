@@ -15,16 +15,20 @@ enum MsgType
 
 class DebugConsole
 {
-private:
-	bool isDisabled = false;
-
 public:
-	DebugConsole() {};
-	DebugConsole(std::string consoleName, bool showDebugConsole);
-	void PrintDebugMsg(std::string msg);
-	void PrintDebugMsg(std::string msg, void* value);
-	void PrintDebugMsg(std::string msg, void* value, MsgType msgType);
-	void PrintDebugMsg(std::string msg, float value);
+	DebugConsole();
+	void Mute();
+	void UnMute();
+	void Open();
+	void Close();
+	void Print(std::string msg);
+	void Print(std::string msg, void* value);
+	void Print(std::string msg, MsgType msgType);
+	void Print(std::string msg, void* value, MsgType msgType);
+	void Print(std::string msg, float value);
 	void PrintHex(unsigned char hexValue);
-	void NewLine();
+
+private:
+	bool muted;
+	static bool consoleOpen;
 };

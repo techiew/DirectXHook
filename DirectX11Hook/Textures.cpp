@@ -14,11 +14,11 @@ int Textures::LoadTexture(std::string filepath)
 {
 	if (device == nullptr)
 	{
-		console->PrintDebugMsg("Could not load texture, device was nullptr", nullptr, MsgType::FAILED);
+		console->Print("Could not load texture, device was nullptr", nullptr, MsgType::FAILED);
 		return -1;
 	}
 
-	console->PrintDebugMsg("Loading texture: %s", (void*)filepath.c_str());
+	console->Print("Loading texture: %s", (void*)filepath.c_str());
 
 	ComPtr<ID3D11ShaderResourceView> texture = nullptr;
 
@@ -30,7 +30,7 @@ int Textures::LoadTexture(std::string filepath)
 
 	if (file.fail())
 	{
-		console->PrintDebugMsg("Texture loading failed, file was not found at: %s", (void*)filepath.c_str(), MsgType::FAILED);
+		console->Print("Texture loading failed, file was not found at: %s", (void*)filepath.c_str(), MsgType::FAILED);
 		file.close();
 		return -1;
 	}
@@ -40,11 +40,11 @@ int Textures::LoadTexture(std::string filepath)
 	HRESULT texResult = CreateWICTextureFromFile(device.Get(), wideString.c_str(), nullptr, texture.GetAddressOf());
 
 	_com_error texErr(texResult);
-	console->PrintDebugMsg("Texture HRESULT: %s", (void*)texErr.ErrorMessage());
+	console->Print("Texture HRESULT: %s", (void*)texErr.ErrorMessage());
 
 	if (FAILED(texResult))
 	{
-		console->PrintDebugMsg("Texture loading failed: %s", (void*)filepath.c_str(), MsgType::FAILED);
+		console->Print("Texture loading failed: %s", (void*)filepath.c_str(), MsgType::FAILED);
 		return -1;
 	}
 	

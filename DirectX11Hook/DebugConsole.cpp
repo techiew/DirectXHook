@@ -1,50 +1,74 @@
 #include "DebugConsole.h"
 
-DebugConsole::DebugConsole(std::string consoleName, bool showDebugConsole)
+bool DebugConsole::consoleOpen = false;
+
+DebugConsole::DebugConsole()
+{
+	muted = false;
+}
+
+void DebugConsole::Mute()
+{
+	muted = true;
+}
+
+void DebugConsole::UnMute()
+{
+	muted = false;
+}
+
+void DebugConsole::Open()
 {
 
-	if (!showDebugConsole)
+	if (AllocConsole())
 	{
-		isDisabled = true;
-		return;
+		freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
+		SetWindowText(GetConsoleWindow(), "DebugConsole");
+		consoleOpen = true;
 	}
 
-	AllocConsole();
-	freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
-	SetWindowText(GetConsoleWindow(), consoleName.c_str());
 }
 
-void DebugConsole::PrintDebugMsg(std::string msg)
+void DebugConsole::Close()
 {
-	if (isDisabled) return;
+	if (!consoleOpen) return;
 
-	printf(std::string("> " + msg + "\n").c_str());
+	PostMessage(GetConsoleWindow(), WM_CLOSE, 0, 0);
+	FreeConsole();
 }
 
-void DebugConsole::PrintDebugMsg(std::string msg, void* value)
+void DebugConsole::Print(std::string msg)
 {
-	if (isDisabled) return;
-
-	printf(std::string("> " + msg + "\n").c_str(), value);
+	Print(msg, nullptr, MsgType::PROGRESS);
 }
 
-void DebugConsole::PrintDebugMsg(std::string msg, void* value, MsgType msgType)
+void DebugConsole::Print(std::string msg, void* value)
 {
-	if (isDisabled) return;
+	Print(msg, value, MsgType::PROGRESS);
+}
+
+void DebugConsole::Print(std::string msg, MsgType msgType)
+{
+	Print(msg, nullptr, msgType);
+}
+
+void DebugConsole::Print(std::string msg, void* value, MsgType msgType)
+{
+	if (muted) return;
 
 	switch (msgType)
 	{
 	case(STARTPROCESS):
-		printf(std::string(" [+] " + msg + "\n").c_str(), value);
+		printf(std::string("+ " + msg + "\n").c_str(), value);
 		break;
 	case(PROGRESS):
-		printf(std::string("> " + msg + "\n").c_str(), value);
+		printf(std::string("  " + msg + "\n").c_str(), value);
 		break;
 	case(COMPLETE):
-		printf(std::string("> " + msg + "\n").c_str(), value);
+		printf(std::string("  " + msg + "\n").c_str(), value);
 		break;
 	case(FAILED): 
-		printf(std::string(" [!] " + msg + "\n").c_str(), value);
+		printf(std::string("!! " + msg + " !!\n").c_str(), value);
 		break;
 	case(INLINE):
 		printf(std::string(msg).c_str(), value);
@@ -53,23 +77,15 @@ void DebugConsole::PrintDebugMsg(std::string msg, void* value, MsgType msgType)
 
 }
 
-void DebugConsole::PrintDebugMsg(std::string msg, float value)
+// I believe I did this because floats don't like to pretend to be void*
+void DebugConsole::Print(std::string msg, float value)
 {
-	if (isDisabled) return;
-
-	printf(std::string("> " + msg + "\n").c_str(), value);
+	if (muted) return;
+	printf(std::string("  " + msg + "\n").c_str(), value);
 }
 
 void DebugConsole::PrintHex(unsigned char hexValue)
 {
-	if (isDisabled) return;
-
+	if (muted) return;
 	printf("0x%X ", hexValue);
-}
-
-void DebugConsole::NewLine()
-{
-	if (isDisabled) return;
-
-	printf("\n");
 }

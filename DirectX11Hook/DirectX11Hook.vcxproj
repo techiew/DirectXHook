@@ -19,28 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Core.h" />
-    <ClInclude Include="Attributes.h" />
-    <ClInclude Include="CustomAttributes.h" />
-    <ClInclude Include="CustomElements.h" />
+    <ClInclude Include="DX11Hook.h" />
     <ClInclude Include="DebugConsole.h" />
     <ClInclude Include="Fonts.h" />
-    <ClInclude Include="MemReader.h" />
-    <ClInclude Include="Overlay.h" />
     <ClInclude Include="Renderer.h" />
-    <ClInclude Include="SigScanner.h" />
     <ClInclude Include="Textures.h" />
+    <ClInclude Include="UIBox.h" />
+    <ClInclude Include="UIFramework.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Core.cpp" />
-    <ClCompile Include="CustomOverlay.cpp" />
+    <ClCompile Include="DX11Hook.cpp" />
     <ClCompile Include="DebugConsole.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="Fonts.cpp" />
-    <ClCompile Include="MemReader.cpp" />
-    <ClCompile Include="Overlay.cpp" />
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="SigScanner.cpp" />
     <ClCompile Include="Textures.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -179,6 +171,11 @@
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\Release\dxgi.dll" "E:\Games\DiRT 2"
+XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_textures" "E:\Games\DiRT 2\hook_textures\"
+XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_fonts" "E:\Games\DiRT 2\hook_fonts\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -200,9 +197,9 @@
       <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\x64\Release\dxgi.dll" "E:\SteamLibrary\steamapps\common\Monster Hunter World"
-XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_textures" "E:\SteamLibrary\steamapps\common\Monster Hunter World\hook_textures\"
-XCOPY /Y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_fonts" "E:\SteamLibrary\steamapps\common\Monster Hunter World\hook_fonts\"</Command>
+      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\x64\Release\dxgi.dll" "E:\Games\Divinity Original Sin 2\bin"
+XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_textures" "E:\Games\Divinity Original Sin 2\bin\hook_textures\"
+XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_fonts" "E:\Games\Divinity Original Sin 2\bin\hook_fonts\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

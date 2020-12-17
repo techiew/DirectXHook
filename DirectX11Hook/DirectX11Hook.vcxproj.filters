@@ -18,14 +18,8 @@
     <Filter Include="Source Files\Assembly Code">
       <UniqueIdentifier>{d30d6925-63ee-46ed-95cd-8e5fe773c52f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Custom">
-      <UniqueIdentifier>{42a17e3e-2980-4455-8ecb-5e67773b07ab}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Core.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DebugConsole.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -38,29 +32,17 @@
     <ClInclude Include="Textures.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SigScanner.h">
+    <ClInclude Include="UIBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Overlay.h">
+    <ClInclude Include="UIFramework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Attributes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CustomAttributes.h">
-      <Filter>Custom</Filter>
-    </ClInclude>
-    <ClInclude Include="CustomElements.h">
-      <Filter>Custom</Filter>
-    </ClInclude>
-    <ClInclude Include="MemReader.h">
+    <ClInclude Include="DX11Hook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Core.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DebugConsole.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -76,16 +58,7 @@
     <ClCompile Include="Textures.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SigScanner.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Overlay.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CustomOverlay.cpp">
-      <Filter>Custom</Filter>
-    </ClCompile>
-    <ClCompile Include="MemReader.cpp">
+    <ClCompile Include="DX11Hook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

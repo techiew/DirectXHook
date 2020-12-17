@@ -10,14 +10,14 @@
 
 class Textures
 {
-private:
-	Microsoft::WRL::ComPtr<ID3D11Device> device = nullptr;
-	DebugConsole* console;
-	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textures;
-
 public:
 	Textures() {};
 	Textures(ID3D11Device* device, DebugConsole* console);
 	int LoadTexture(std::string filepath);
 	ID3D11ShaderResourceView* Get(int textureIndex);
+
+private:
+	Microsoft::WRL::ComPtr<ID3D11Device> device = nullptr;
+	DebugConsole* console;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textures;
 };
