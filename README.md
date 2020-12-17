@@ -5,7 +5,7 @@ Below is a video of the hook hooking the renderer in Monster Hunter World.
 
 [![Youtube Video](https://github.com/techiew/DirectX11Hook/blob/master/thumbnail.png)](https://youtu.be/kzF1YnqXKXY)
 
-I'll be adding proper documentation at some point, working on other stuff.
+I'll be adding proper documentation at some point, working on other stuff. Little note: if you want to compile, you need to download directxtk for DirectX11, you can do this in Visual Studio through the package manager.
 
 **Tested in and confirmed working for multiple games (both 32-bit and 64-bit):**
 
