@@ -75,7 +75,7 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 	return true;
 }
 
-void Renderer::Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
+void Renderer::Render()
 {
 	context->OMSetRenderTargets(1, mainRenderTargetView.GetAddressOf(), 0);
 	context->RSSetViewports(1, &viewport);
@@ -410,18 +410,18 @@ void Renderer::DrawExampleText()
 	spriteBatch->End();
 }
 
-void Renderer::OnPresent(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
+void Renderer::OnPresent(IDXGISwapChain* pThis, UINT syncInterval, UINT flags)
 {
 
 	if (!initialized)
 	{
-		if (!Init(swapChain, syncInterval, flags)) return;
+		if (!Init(pThis, syncInterval, flags)) return;
 	}
 
-	Render(swapChain, syncInterval, flags);
+	Render();
 }
 
-void Renderer::OnResizeBuffers(UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags)
+void Renderer::OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags)
 {
 	initialized = false;
 	mainRenderTargetView.ReleaseAndGetAddressOf();

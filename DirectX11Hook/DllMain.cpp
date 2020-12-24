@@ -21,18 +21,18 @@
 
 extern "C" int JmpToAddr;
 
-HMODULE originalDll = 0;
 FARPROC procAddresses[21]; // Original .dll function addresses
 
 DWORD WINAPI MainThread(LPVOID lpParam)
 {
 	DX11Hook hook = DX11Hook();
-	hook.Hook(originalDll);
+	hook.Hook();
 	return S_OK;
 }
 
 BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 {
+	HMODULE originalDll = 0;
 
 	if (reason == DLL_PROCESS_ATTACH)
 	{

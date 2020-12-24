@@ -23,9 +23,9 @@ class Renderer
 public:
 	Renderer();
 	bool Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
-	void Render(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
-	void OnPresent(IDXGISwapChain *swapChain, UINT syncInterval, UINT flags);
-	void OnResizeBuffers(UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
+	void Render();
+	void OnPresent(IDXGISwapChain* pThis, UINT syncInterval, UINT flags);
+	void OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
 	void DrawExamples(bool draw);
 	bool IsInitialized();
 	int GetWindowWidth();

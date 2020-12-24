@@ -37,6 +37,11 @@ void DebugConsole::Close()
 	FreeConsole();
 }
 
+void DebugConsole::Print()
+{
+	Print("", nullptr, MsgType::PROGRESS);
+}
+
 void DebugConsole::Print(std::string msg)
 {
 	Print(msg, nullptr, MsgType::PROGRESS);
@@ -75,13 +80,6 @@ void DebugConsole::Print(std::string msg, void* value, MsgType msgType)
 		break;
 	}
 
-}
-
-// I believe I did this because floats don't like to pretend to be void*
-void DebugConsole::Print(std::string msg, float value)
-{
-	if (muted) return;
-	printf(std::string("  " + msg + "\n").c_str(), value);
 }
 
 void DebugConsole::PrintHex(unsigned char hexValue)
