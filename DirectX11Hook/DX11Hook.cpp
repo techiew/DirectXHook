@@ -57,10 +57,10 @@ bool DX11Hook::CreateMiddleMan()
 	*(uintptr_t*)(resizeBuffersMiddleMan + 14) = 0x00000000000025FF;
 	*(uintptr_t*)(resizeBuffersMiddleMan + 14 + 6) = (uintptr_t)&OnResizeBuffers;
 #else
-	*(uintptr_t*)(presentMiddleMan + 14) = 0x000000EA;
-	*(uintptr_t*)(presentMiddleMan + 14 + 1) = (uintptr_t)&OnPresent;
-	*(uintptr_t*)(resizeBuffersMiddleMan + 14) = 0x000000EA;
-	*(uintptr_t*)(resizeBuffersMiddleMan + 14 + 1) = (uintptr_t)&OnResizeBuffers;
+	*(uintptr_t*)(presentMiddleMan + 14) = 0x000000E9;
+	*(uintptr_t*)(presentMiddleMan + 14 + 1) = (uintptr_t)&OnPresent - (presentMiddleMan + 14) - 5;
+	*(uintptr_t*)(resizeBuffersMiddleMan + 14) = 0x000000E9;
+	*(uintptr_t*)(resizeBuffersMiddleMan + 14 + 1) = (uintptr_t)&OnResizeBuffers - (resizeBuffersMiddleMan + 14) - 5;
 #endif
 
 	return true;
@@ -78,7 +78,7 @@ bool DX11Hook::CreateDummySwapChain()
 	RegisterClassExA(&wc);
 
 	// We need to set up a dummy window for our device and swap chain creation.
-	// I don't know the exact reason, but if we create another device for the main window, everything crashes.
+	// I don't know the exact reason, but if we create another device for the default main window, everything crashes.
 	HWND hWnd = CreateWindow(wc.lpszClassName, TEXT(""), WS_DISABLED, 0, 0, 0, 0, NULL, NULL, NULL, nullptr);
 
 	DXGI_SWAP_CHAIN_DESC desc{ 0 };
@@ -258,12 +258,8 @@ uintptr_t DX11Hook::FindTrampolineDestination(uintptr_t firstJmpAddr)
 	} 
 	else if (*(unsigned char*)absolute == 0xE9)
 	{
-#ifdef _WIN64
 		memcpy(&offset, (void*)(absolute + 1), 4);
 		destination = absolute + offset + 5;
-#else
-		memcpy(&destination, (void*)(absolute + 1), 4);
-#endif
 	}
 
 	return destination;

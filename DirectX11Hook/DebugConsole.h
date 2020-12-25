@@ -20,8 +20,8 @@ public:
 	DebugConsole();
 	void Mute();
 	void Unmute();
-	void MuteAll();
-	void UnmuteAll();
+	static void MuteAll();
+	static void UnmuteAll();
 	void Open();
 	void Close();
 	void Print();
