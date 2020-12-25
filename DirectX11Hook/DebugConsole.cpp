@@ -1,22 +1,36 @@
 #include "DebugConsole.h"
 
 bool DebugConsole::consoleOpen = false;
+bool DebugConsole::globalMute = false;
 
 DebugConsole::DebugConsole()
 {
 	muted = false;
 }
 
+// Mutes the current instance
 void DebugConsole::Mute()
 {
 	muted = true;
 }
 
-void DebugConsole::UnMute()
+void DebugConsole::Unmute()
 {
 	muted = false;
 }
 
+// Mutes every instance of DebugConsole
+void DebugConsole::MuteAll()
+{
+	globalMute = true;
+}
+
+void DebugConsole::UnmuteAll()
+{
+	globalMute = false;
+}
+
+// Opens a console, only if one does not exist
 void DebugConsole::Open()
 {
 
@@ -29,6 +43,7 @@ void DebugConsole::Open()
 
 }
 
+// Closes an existing console (only if DebugConsole owns it)
 void DebugConsole::Close()
 {
 	if (!consoleOpen) return;
@@ -39,51 +54,44 @@ void DebugConsole::Close()
 
 void DebugConsole::Print()
 {
-	Print("", nullptr, MsgType::PROGRESS);
+	_Print(MsgType::PROGRESS, "", nullptr);
 }
 
-void DebugConsole::Print(std::string msg)
+void DebugConsole::Print(std::string msg, ...)
 {
-	Print(msg, nullptr, MsgType::PROGRESS);
+	va_list args;
+	va_start(args, msg);
+	_Print(MsgType::PROGRESS, msg, args);
 }
 
-void DebugConsole::Print(std::string msg, void* value)
+void DebugConsole::Print(MsgType msgType, std::string msg, ...)
 {
-	Print(msg, value, MsgType::PROGRESS);
+	va_list args;
+	va_start(args, msg);
+	_Print(msgType, msg, args);
 }
 
-void DebugConsole::Print(std::string msg, MsgType msgType)
+void DebugConsole::_Print(MsgType msgType, std::string msg, va_list args)
 {
-	Print(msg, nullptr, msgType);
-}
-
-void DebugConsole::Print(std::string msg, void* value, MsgType msgType)
-{
-	if (muted) return;
+	if (muted || globalMute) return;
 
 	switch (msgType)
 	{
 	case(STARTPROCESS):
-		printf(std::string("+ " + msg + "\n").c_str(), value);
+		vprintf(std::string("+ " + msg + "\n").c_str(), args);
 		break;
 	case(PROGRESS):
-		printf(std::string("  " + msg + "\n").c_str(), value);
+		vprintf(std::string("  " + msg + "\n").c_str(), args);
 		break;
 	case(COMPLETE):
-		printf(std::string("  " + msg + "\n").c_str(), value);
+		vprintf(std::string("  " + msg + "\n").c_str(), args);
 		break;
 	case(FAILED): 
-		printf(std::string("!! " + msg + " !!\n").c_str(), value);
+		vprintf(std::string("!! " + msg + " !!\n").c_str(), args);
 		break;
 	case(INLINE):
-		printf(std::string(msg).c_str(), value);
+		vprintf(std::string(msg).c_str(), args);
 		break;
 	}
 
-}
-
-void DebugConsole::PrintHex(unsigned char hexValue)
-{
-	if (muted) return;
-	printf("0x%X ", hexValue);
 }

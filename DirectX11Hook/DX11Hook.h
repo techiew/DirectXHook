@@ -2,11 +2,21 @@
 
 #include <d3d11.h>
 #include <Windows.h>
-#include <sysinfoapi.h>
-#include <Psapi.h>
 #include <cstdint>
 #include "DebugConsole.h"
 #include "Renderer.h"
+
+/*
+* Here we have typedefs of the functions we want to hook.
+* We have these so we can call these functions through pointers to specific memory addresses.
+*
+* Setting the proper calling convention is important (__stdcall).
+* It makes it so we can send/read function parameters into/from memory in the correct way.
+* 64-bit functions actually use the __fastcall calling convention, but the compiler changes
+* __stdcall to __fastcall automatically for 64-bit compilation.
+*
+* A great resource on calling conventions: https://www.codeproject.com/Articles/1388/Calling-Conventions-Demystified
+*/
 
 typedef HRESULT (__stdcall* Present)(IDXGISwapChain* This, UINT SyncInterval, UINT Flags);
 typedef HRESULT (__stdcall* ResizeBuffers)(IDXGISwapChain* This, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);

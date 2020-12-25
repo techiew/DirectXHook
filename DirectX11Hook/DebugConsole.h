@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <Windows.h>
+#include <cstdarg>
 
 enum MsgType
 {
@@ -18,17 +19,19 @@ class DebugConsole
 public:
 	DebugConsole();
 	void Mute();
-	void UnMute();
+	void Unmute();
+	void MuteAll();
+	void UnmuteAll();
 	void Open();
 	void Close();
 	void Print();
-	void Print(std::string msg);
-	void Print(std::string msg, void* value);
-	void Print(std::string msg, MsgType msgType);
-	void Print(std::string msg, void* value, MsgType msgType);
-	void PrintHex(unsigned char hexValue);
+	void Print(std::string msg, ...);
+	void Print(MsgType msgType, std::string msg, ...);
 
 private:
 	bool muted;
 	static bool consoleOpen;
+	static bool globalMute;
+
+	void _Print(MsgType msgType, std::string msg, va_list args);
 };

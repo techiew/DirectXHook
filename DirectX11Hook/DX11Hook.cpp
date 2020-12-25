@@ -19,7 +19,7 @@ DX11Hook::DX11Hook()
 
 bool DX11Hook::Hook()
 {
-	console.Print("Hooking...", MsgType::STARTPROCESS);
+	console.Print(MsgType::STARTPROCESS, "Hooking...");
 
 	CreateMiddleMan();
 	CreateDummySwapChain();
@@ -28,6 +28,10 @@ bool DX11Hook::Hook()
 	return true;
 }
 
+// Creates a space between the VMT and the original function we want to hook
+// It's kind of a blend between VMT hooking and hooking with trampolines.
+// I found this to be a good solution for compatibility with other hooks.
+// I'm not sure if this technique already has a name, but this is what I call it.
 bool DX11Hook::CreateMiddleMan()
 {
 	int size = 28; // Arbitrary
@@ -37,15 +41,15 @@ bool DX11Hook::CreateMiddleMan()
 
 	if (presentMiddleMan == 0 || resizeBuffersMiddleMan == 0)
 	{
-		console.Print("Failed to allocate memory for the hook!", MsgType::FAILED);
+		console.Print(MsgType::FAILED, "Failed to allocate memory for the hook!");
 		return false;
 	}
 
 	memset((void*)presentMiddleMan, 0x90, size);
 	memset((void*)resizeBuffersMiddleMan, 0x90, size);
 
-	console.Print("Allocated memory at: %p", (void*)presentMiddleMan);
-	console.Print("Allocated memory at: %p", (void*)resizeBuffersMiddleMan);
+	console.Print("Allocated memory at: %p", presentMiddleMan);
+	console.Print("Allocated memory at: %p", resizeBuffersMiddleMan);
 
 #ifdef _WIN64
 	*(uintptr_t*)(presentMiddleMan + 14) = 0x00000000000025FF;
@@ -59,13 +63,14 @@ bool DX11Hook::CreateMiddleMan()
 	*(uintptr_t*)(resizeBuffersMiddleMan + 14 + 1) = (uintptr_t)&OnResizeBuffers;
 #endif
 
+	return true;
 }
 
-// Creates an instance of the IDXGISwapChain class, which we won't use for it's intended purpose,
-// rather we use it to gain access to the pointer that lets us find its Virtual Method Table.
+// Creates an instance of the IDXGISwapChain class, so that we can use the object
+// to gain access to the Virtual Method Table of the class.
 bool DX11Hook::CreateDummySwapChain()
 {
-	WNDCLASSEX wc{ 0 };
+	WNDCLASSEX wc { 0 };
 	wc.cbSize = sizeof(wc);
 	wc.lpfnWndProc = DefWindowProc;
 	wc.lpszClassName = TEXT("dummy class");
@@ -107,7 +112,7 @@ bool DX11Hook::CreateDummySwapChain()
 	if (FAILED(result))
 	{
 		_com_error error(result);
-		console.Print("CreateDeviceAndSwapChain failed: %s", (void*)error.ErrorMessage(), MsgType::FAILED);
+		console.Print(MsgType::FAILED, "CreateDeviceAndSwapChain failed: %s", error.ErrorMessage());
 		DestroyWindow(desc.OutputWindow);
 		UnregisterClass(wc.lpszClassName, GetModuleHandle(nullptr));
 		return false;
@@ -137,13 +142,14 @@ uintptr_t DX11Hook::HookSwapChainVMT()
 	int vmtResizeOffset = 236;
 #endif
 
+	// Here we find the correct entries in the VMT for both functions
 	vmtBaseAddress = (*(uintptr_t*)dummySwapChain);
 	vmtPresentIndex = (vmtBaseAddress + (size * 8)); // * 8
 	vmtResizeBuffersIndex = (vmtBaseAddress + (size * 13)); // * 13
 
-	console.Print("VMT base address: %p", (void*)vmtBaseAddress);
-	console.Print("VMT Present index: %p", (void*)vmtPresentIndex);
-	console.Print("VMT ResizeBuffers index: %p", (void*)vmtResizeBuffersIndex);
+	console.Print("VMT base address: %p", vmtBaseAddress);
+	console.Print("VMT Present index: %p", vmtPresentIndex);
+	console.Print("VMT ResizeBuffers index: %p", vmtResizeBuffersIndex);
 
 	DWORD oldProtection;
 	DWORD oldProtection2;
@@ -154,6 +160,7 @@ uintptr_t DX11Hook::HookSwapChainVMT()
 	originalPresentAddress = (*(uintptr_t*)vmtPresentIndex);
 	originalResizeBuffersAddress = (*(uintptr_t*)vmtResizeBuffersIndex);
 
+	// This sets the VMT entries to point towards our functions instead.
 	*(uintptr_t*)vmtPresentIndex = presentMiddleMan;
 	*(uintptr_t*)vmtResizeBuffersIndex = resizeBuffersMiddleMan;
 
@@ -162,12 +169,16 @@ uintptr_t DX11Hook::HookSwapChainVMT()
 
 	dummySwapChain->Release();
 
-	console.Print("Original Present address: %p", (void*)originalPresentAddress);
-	console.Print("Original ResizeBuffers address: %p", (void*)originalResizeBuffersAddress);
+	console.Print("Original Present address: %p", originalPresentAddress);
+	console.Print("Original ResizeBuffers address: %p", originalResizeBuffersAddress);
 
 	return true;
 }
 
+// This fixes potential issues with other hooks, such as the Steam overlay, which 
+// can hook themselves both in our middle man and the original function at the same time.
+// We need to check for this issue when OnPresent/OnResizeBuffers runs, as that 
+// is the moment the double hook can occur.
 void DX11Hook::FixDoubleHooks()
 {
 	if (fixApplied) return;
@@ -199,8 +210,8 @@ void DX11Hook::FixDoubleHooks()
 		trampDst1 = FindTrampolineDestination(originalPresentAddress);
 		trampDst2 = FindTrampolineDestination(presentMiddleMan);
 
-		console.Print("pTrampDst1: %p", (void*)trampDst1);
-		console.Print("pTrampDst2: %p", (void*)trampDst2);
+		console.Print("pTrampDst1: %p", trampDst1);
+		console.Print("pTrampDst2: %p", trampDst2);
 
 		if (trampDst1 == trampDst2)
 		{
@@ -214,8 +225,8 @@ void DX11Hook::FixDoubleHooks()
 		trampDst1 = FindTrampolineDestination(originalResizeBuffersAddress);
 		trampDst2 = FindTrampolineDestination(resizeBuffersMiddleMan);
 
-		console.Print("rTrampDst1: %p", (void*)trampDst1);
-		console.Print("rTrampDst2: %p", (void*)trampDst2);
+		console.Print("rTrampDst1: %p", trampDst1);
+		console.Print("rTrampDst2: %p", trampDst2);
 
 		if (trampDst1 == trampDst2)
 		{
@@ -230,6 +241,8 @@ void DX11Hook::FixDoubleHooks()
 	fixApplied = true;
 }
 
+// Finds the final destination of a trampoline placed by other hooks,
+// this lets us determine the owner of the trampoline.
 uintptr_t DX11Hook::FindTrampolineDestination(uintptr_t firstJmpAddr)
 {
 	int offset;
@@ -256,6 +269,11 @@ uintptr_t DX11Hook::FindTrampolineDestination(uintptr_t firstJmpAddr)
 	return destination;
 }
 
+/*
+* The real Present will get hooked and then detour to this function.
+* Present is part of the final rendering stage in DirectX.
+* https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-present
+*/
 HRESULT __stdcall DX11Hook::OnPresent(IDXGISwapChain* pThis, UINT syncInterval, UINT flags)
 {
 
@@ -271,6 +289,13 @@ HRESULT __stdcall DX11Hook::OnPresent(IDXGISwapChain* pThis, UINT syncInterval, 
 	return ((Present)originalPresentAddress)(pThis, syncInterval, flags);
 }
 
+/*
+* The real ResizeBuffers will get hooked and then detour to this function.
+* ResizeBuffers usually gets called when the window resizes (not all games call it).
+* We need to hook this so we can release our reference to the render target when it's called.
+* If we don't do this then the game will most likely crash.
+* https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-resizebuffers
+*/
 HRESULT __stdcall DX11Hook::OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags)
 {
 	console.Print("ResizeBuffers was called!");

@@ -2,17 +2,17 @@
 
 using namespace DirectX;
 
-Fonts::Fonts(ID3D11Device* device, DebugConsole* console)
+Fonts::Fonts(ID3D11Device* device)
 {
+	console = DebugConsole();
 	this->device = device;
-	this->console = console;
 }
 
 int Fonts::LoadFont(std::string filepath)
 {
 	if (device == nullptr) return -1;
 
-	console->Print("Loading font: %s", (void*)filepath.c_str());
+	console.Print("Loading font: %s", filepath);
 
 	std::fstream file = std::fstream(filepath);
 
@@ -22,14 +22,14 @@ int Fonts::LoadFont(std::string filepath)
 
 	if (file.fail())
 	{
-		console->Print("Font loading failed: %s", (void*)filepath.c_str(), MsgType::FAILED);
+		console.Print(MsgType::FAILED, "Font loading failed: %s", filepath);
 		file.close();
 		return -1;
 	}
 
 	file.close();
 
-	console->Print("Font was loaded");
+	console.Print("Font was loaded");
 	fonts.push_back(std::make_shared<SpriteFont>(device.Get(), wideString.c_str()));
 
 	return fonts.size() - 1;

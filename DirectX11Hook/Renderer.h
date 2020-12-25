@@ -17,17 +17,13 @@
 // ComPtr is an official smart pointer used for COM objects, DirectX objects are COM objects
 // https://docs.microsoft.com/en-us/cpp/cppcx/wrl/comptr-class?view=vs-2019
 
-
 class Renderer
 {
 public:
 	Renderer();
-	bool Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
-	void Render();
 	void OnPresent(IDXGISwapChain* pThis, UINT syncInterval, UINT flags);
 	void OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
 	void DrawExamples(bool draw);
-	bool IsInitialized();
 	int GetWindowWidth();
 	int GetWindowHeight();
 	ID3D11Device* GetDevice();
@@ -88,6 +84,8 @@ private:
 	}
 	constantBufferData;
 
+	bool Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
+	void Render();
 	void CreatePipeline();
 	Microsoft::WRL::ComPtr<ID3DBlob> LoadShader(const char* shaderData, std::string targetShaderVersion, std::string shaderEntry);
 	void CreateExampleTriangle();

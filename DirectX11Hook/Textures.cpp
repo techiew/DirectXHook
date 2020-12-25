@@ -3,22 +3,23 @@
 using namespace DirectX;
 using namespace Microsoft::WRL;
 
-Textures::Textures(ID3D11Device* device, DebugConsole* console)
+Textures::Textures(ID3D11Device* device)
 {
+	console = DebugConsole();
 	this->device = device;
-	this->console = console;
 	textures = std::vector<ComPtr<ID3D11ShaderResourceView>>();
 }
 
 int Textures::LoadTexture(std::string filepath)
 {
+
 	if (device == nullptr)
 	{
-		console->Print("Could not load texture, device was nullptr", nullptr, MsgType::FAILED);
+		console.Print(MsgType::FAILED, "Could not load texture, device was nullptr");
 		return -1;
 	}
 
-	console->Print("Loading texture: %s", (void*)filepath.c_str());
+	console.Print("Loading texture: %s", filepath);
 
 	ComPtr<ID3D11ShaderResourceView> texture = nullptr;
 
@@ -30,7 +31,7 @@ int Textures::LoadTexture(std::string filepath)
 
 	if (file.fail())
 	{
-		console->Print("Texture loading failed, file was not found at: %s", (void*)filepath.c_str(), MsgType::FAILED);
+		console.Print(MsgType::FAILED, "Texture loading failed, file was not found at: %s", filepath);
 		file.close();
 		return -1;
 	}
@@ -40,11 +41,11 @@ int Textures::LoadTexture(std::string filepath)
 	HRESULT texResult = CreateWICTextureFromFile(device.Get(), wideString.c_str(), nullptr, texture.GetAddressOf());
 
 	_com_error texErr(texResult);
-	console->Print("Texture HRESULT: %s", (void*)texErr.ErrorMessage());
+	console.Print("Texture HRESULT: %s", texErr.ErrorMessage());
 
 	if (FAILED(texResult))
 	{
-		console->Print("Texture loading failed: %s", (void*)filepath.c_str(), MsgType::FAILED);
+		console.Print(MsgType::FAILED, "Texture loading failed: %s", filepath);
 		return -1;
 	}
 	

@@ -18,7 +18,7 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 	
 	if (firstInit)
 	{
-		console.Print("Initializing renderer...", MsgType::STARTPROCESS);
+		console.Print(MsgType::STARTPROCESS, "Initializing renderer...");
 		HRESULT getDevice = swapChain->GetDevice(__uuidof(ID3D11Device), (void**)&device);
 
 		if (SUCCEEDED(getDevice))
@@ -34,7 +34,7 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 	}
 	else
 	{
-		console.Print("Resizing buffers...", MsgType::STARTPROCESS);
+		console.Print(MsgType::STARTPROCESS, "Resizing buffers...");
 	}
 
 	DXGI_SWAP_CHAIN_DESC desc;
@@ -45,8 +45,8 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 	GetClientRect(desc.OutputWindow, &hwndRect);
 	windowWidth = hwndRect.right - hwndRect.left;
 	windowHeight = hwndRect.bottom - hwndRect.top;
-	console.Print("Window width: %i", (void*)windowWidth);
-	console.Print("Window height: %i", (void*)windowHeight);
+	console.Print("Window width: %i", windowWidth);
+	console.Print("Window height: %i", windowHeight);
 
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
 	viewport.Width = windowWidth;
@@ -63,8 +63,8 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 
 	if (firstInit)
 	{
-		console.Print("Successfully initialized the renderer", MsgType::COMPLETE);
-		console.Print("Now rendering...", MsgType::STARTPROCESS);
+		console.Print(MsgType::COMPLETE, "Successfully initialized the renderer");
+		console.Print(MsgType::STARTPROCESS, "Now rendering...");
 		//overlay = Overlay(device.Get(), spriteBatch.get(), console, desc.OutputWindow);
 	}
 
@@ -91,13 +91,14 @@ void Renderer::Render()
 			examplesLoaded = true;
 		}
 
-		DrawExampleTriangle(); // Example triangle for testing
-		DrawExampleText(); // Same but with text
+		DrawExampleTriangle();
+		DrawExampleText();
 	}
 
 	//overlay.Render();
 }
 
+// Creates the necessary things for rendering the examples
 void Renderer::CreatePipeline()
 {
 	ComPtr<ID3DBlob> vertexShaderBlob = LoadShader(shaderData, "vs_5_0", "VS").Get();
@@ -155,7 +156,7 @@ void Renderer::CreatePipeline()
 
 ComPtr<ID3DBlob> Renderer::LoadShader(const char* shader, std::string targetShaderVersion, std::string shaderEntry)
 {
-	console.Print("Loading shader: %s", (void*)shaderEntry.c_str());
+	console.Print("Loading shader: %s", shaderEntry.c_str());
 	ComPtr<ID3DBlob> errorBlob = nullptr;
 	ComPtr<ID3DBlob> shaderBlob;
 
@@ -165,7 +166,7 @@ ComPtr<ID3DBlob> Renderer::LoadShader(const char* shader, std::string targetShad
 	{
 		char error[256]{ 0 };
 		memcpy(error, errorBlob->GetBufferPointer(), errorBlob->GetBufferSize());
-		console.Print("Shader error: %s", (void*)error, MsgType::FAILED);
+		console.Print(MsgType::FAILED, "Shader error: %s", error);
 		return nullptr;
 	}
 
@@ -265,7 +266,7 @@ void Renderer::CreateExampleFont()
 	}
 	else
 	{
-		console.Print("Failed to load the example font", MsgType::FAILED);
+		console.Print(MsgType::FAILED, "Failed to load the example font");
 	}
 
 }
@@ -424,17 +425,12 @@ void Renderer::OnPresent(IDXGISwapChain* pThis, UINT syncInterval, UINT flags)
 void Renderer::OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags)
 {
 	initialized = false;
-	mainRenderTargetView.ReleaseAndGetAddressOf();
+	mainRenderTargetView.ReleaseAndGetAddressOf(); // We need to let this go, otherwise the game might crash.
 }
 
 void Renderer::DrawExamples(bool draw)
 {
 	drawExamples = draw;
-}
-
-bool Renderer::IsInitialized()
-{
-	return initialized;
 }
 
 int Renderer::GetWindowWidth()

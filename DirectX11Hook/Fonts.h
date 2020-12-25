@@ -14,13 +14,12 @@
 class Fonts
 {
 public:
-	Fonts() {};
-	Fonts(ID3D11Device* device, DebugConsole* console);
+	Fonts(ID3D11Device* device);
 	int LoadFont(std::string filepath);
 	DirectX::SpriteFont* Get(int fontIndex);
 
 private:
+	DebugConsole console;
 	Microsoft::WRL::ComPtr<ID3D11Device> device = nullptr;
-	DebugConsole* console;
 	std::vector<std::shared_ptr<DirectX::SpriteFont>> fonts;
 };

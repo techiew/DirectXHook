@@ -2,8 +2,6 @@
 
 #include <SpriteBatch.h>
 
-using namespace DirectX;
-
 class UIBox
 {
 public:
@@ -14,6 +12,6 @@ public:
 	bool clicked = false;
 
 private:
-	XMFLOAT3 color;
+	DirectX::XMFLOAT3 color;
 	int textureID;
 };
