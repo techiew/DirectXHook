@@ -1,4 +1,7 @@
 # DirectXHook
+
+## Currently refactoring this project as I have added DX12 support to the hook. Repo will be updated in the near future.
+
 This DirectX hook can take control of the DirectX 11/12 renderer in games and applications. The hook should work for most games and can be built for both 32-bit (DirectX 11 only) and 64-bit. **Still under development, but all the core parts work.** 
 
 Below is a video of the hook hooking the renderer in Monster Hunter World.
