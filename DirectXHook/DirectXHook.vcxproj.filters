@@ -9,57 +9,51 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="HLSL Shaders">
-      <UniqueIdentifier>{7ea9a3da-f128-42c3-8be7-a89874ade730}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Module Definition File">
       <UniqueIdentifier>{5c319777-824d-4c27-bd92-e0e1db49226d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\Assembly Code">
       <UniqueIdentifier>{d30d6925-63ee-46ed-95cd-8e5fe773c52f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Overlays">
+      <UniqueIdentifier>{6931652b-81b5-49cf-a31b-a859dd5f61a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Overlays\RiseDpsMeter">
+      <UniqueIdentifier>{7669d797-de0d-47f6-a356-8a491a3a72a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HLSL Shader">
+      <UniqueIdentifier>{7ea9a3da-f128-42c3-8be7-a89874ade730}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DebugConsole.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Fonts.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Textures.h">
+    <ClInclude Include="DirectXHook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UIBox.h">
+    <ClInclude Include="OverlayFramework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UIFramework.h">
+    <ClInclude Include="IRenderCallback.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DX11Hook.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Overlays\RiseDpsMeter\RiseDpsMeter.h">
+      <Filter>Overlays\RiseDpsMeter</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DebugConsole.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DllMain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Fonts.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Textures.cpp">
+    <ClCompile Include="DirectXHook.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DX11Hook.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Overlays\RiseDpsMeter\RiseDpsMeter.cpp">
+      <Filter>Overlays\RiseDpsMeter</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -69,16 +63,13 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders.hlsl">
+      <Filter>HLSL Shader</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
     <MASM Include="JmpToAddr.asm">
       <Filter>Source Files\Assembly Code</Filter>
     </MASM>
-    <MASM Include="JmpToAddr64.asm">
-      <Filter>Source Files\Assembly Code</Filter>
-    </MASM>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Shaders.hlsl">
-      <Filter>HLSL Shaders</Filter>
-    </FxCompile>
   </ItemGroup>
 </Project>

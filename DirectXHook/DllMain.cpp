@@ -1,32 +1,20 @@
 #include <Windows.h>
-#include <iostream>
-#include "DX11Hook.h"
 
-/* 
-* This .dll is designed to be a proxy .dll
-* A good resource on what a proxy .dll is:
-* https://kevinalmansa.github.io/application%20security/DLL-Proxying/
-*/
+#include "DirectXHook.h"
+#include "Overlays/RiseDpsMeter/RiseDpsMeter.h"
 
-/*
-* JmpToAddr is a function coded in assembly which is taken from either
-* JmpToAddr64.asm or JmpToAddr.asm as decided by the macro below.
-*/
-
-#ifdef _WIN64
-#define JmpToAddr JmpToAddr64()
-#else
-#define JmpToAddr JmpToAddr()
-#endif
-
-extern "C" int JmpToAddr;
-
+// JmpToAddr() is a function written in assembly.
+// We use this to do primitive jumps to memory locations without any strings attached.
+extern "C" int JmpToAddr();
 FARPROC procAddresses[21]; // Original .dll function addresses
 
 DWORD WINAPI MainThread(LPVOID lpParam)
 {
-	DX11Hook hook = DX11Hook();
-	hook.Hook();
+	DirectXHook dxHook;
+	static RiseDpsMeter riseDpsMeter;
+	dxHook.SetRenderCallback(&riseDpsMeter);
+	dxHook.DrawExamples(false);
+	dxHook.Hook();
 	return S_OK;
 }
 
@@ -38,14 +26,7 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 	{
 		DisableThreadLibraryCalls(module);
 
-		// Loads the correct version of dxgi.dll
-		// System32 is for 64 bit and SysWOW64 is for 32 bit, no idea why
-#ifdef _WIN64
 		originalDll = LoadLibrary("C:\\Windows\\System32\\dxgi.dll");
-#else
-		originalDll = LoadLibrary("C:\\Windows\\SysWOW64\\dxgi.dll");
-#endif
-
 		if(!originalDll) return false;
 
 		// Find function addresses we need for forward exporting
@@ -84,14 +65,12 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 }
 
 /* 
-* These are the functions our .dll exports for applications to use, 
-* we jump to the real .dll's functions to perform these for us.
+* These are the functions our .dll exports for the application to use, 
+* we jump to the real .dll's functions to perform these for us (because 
+* we don't actually want to implement these functions).
 * I used a third-party tool to automatically create a template proxy .dll,
 * https://www.codeproject.com/Articles/1179147/ProxiFy-Automatic-Proxy-DLL-Generation
 * By using this you don't have to manually write all the exports or the module definition file (.def)
-*
-* You can also use __declspec: 
-* https://docs.microsoft.com/en-us/cpp/build/exporting-from-a-dll-using-declspec-dllexport?view=vs-2019
 */
 extern "C"
 {
@@ -99,87 +78,86 @@ extern "C"
 
 	void PROXY_ApplyCompatResolutionQuirking() {
 		procAddr = procAddresses[0];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_CompatString() {
 		procAddr = procAddresses[1];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_CompatValue() {
 		procAddr = procAddresses[2];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_CreateDXGIFactory() {
 		procAddr = procAddresses[3];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_CreateDXGIFactory1() {
 		procAddr = procAddresses[4];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_CreateDXGIFactory2() {
 		procAddr = procAddresses[5];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_DXGID3D10CreateDevice() {
 		procAddr = procAddresses[6];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_DXGID3D10CreateLayeredDevice() {
 		procAddr = procAddresses[7];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_DXGID3D10ETWRundown() {
 		procAddr = procAddresses[8];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_DXGID3D10GetLayeredDeviceSize() {
 		procAddr = procAddresses[9];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_DXGID3D10RegisterLayers() {
 		procAddr = procAddresses[10];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_DXGIDeclareAdapterRemovalSupport() {
 		procAddr = procAddresses[11];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_DXGIDumpJournal() {
 		procAddr = procAddresses[12];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_DXGIGetDebugInterface1() {
 		procAddr = procAddresses[13];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_DXGIReportAdapterConfiguration() {
 		procAddr = procAddresses[14];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_DXGIRevertToSxS() {
 		procAddr = procAddresses[15];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_PIXBeginCapture() {
 		procAddr = procAddresses[16];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_PIXEndCapture() {
 		procAddr = procAddresses[17];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_PIXGetCaptureState() {
 		procAddr = procAddresses[18];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_SetAppCompatStringPointer() {
 		procAddr = procAddresses[19];
-		JmpToAddr;
+		JmpToAddr();
 	}
 	void PROXY_UpdateHMDEmulationStatus() {
 		procAddr = procAddresses[20];
-		JmpToAddr;
+		JmpToAddr();
 	}
-
 }

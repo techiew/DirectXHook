@@ -1,3 +1,4 @@
+// Make sure that this file is excluded from the build to avoid compile time errors!
 R""(
 
 Texture2D tex;

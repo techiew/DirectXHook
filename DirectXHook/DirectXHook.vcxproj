@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -19,30 +19,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DX11Hook.h" />
-    <ClInclude Include="DebugConsole.h" />
-    <ClInclude Include="Fonts.h" />
+    <ClInclude Include="DirectXHook.h" />
+    <ClInclude Include="IRenderCallback.h" />
+    <ClInclude Include="Overlays\RiseDpsMeter\RiseDpsMeter.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Renderer.h" />
-    <ClInclude Include="Textures.h" />
-    <ClInclude Include="UIBox.h" />
-    <ClInclude Include="UIFramework.h" />
+    <ClInclude Include="OverlayFramework.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DX11Hook.cpp" />
-    <ClCompile Include="DebugConsole.cpp" />
+    <ClCompile Include="DirectXHook.cpp" />
     <ClCompile Include="DllMain.cpp" />
-    <ClCompile Include="Fonts.cpp" />
+    <ClCompile Include="Overlays\RiseDpsMeter\RiseDpsMeter.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Renderer.cpp" />
-    <ClCompile Include="Textures.cpp" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="JmpToAddr.asm">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
       <FileType>Document</FileType>
-    </MASM>
-    <MASM Include="JmpToAddr64.asm">
-      <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </MASM>
   </ItemGroup>
   <ItemGroup>
@@ -53,21 +50,23 @@
     <FxCompile Include="Shaders.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{468D8B3D-B438-4CA5-AD1A-F546816E841A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>DirectX11Hook</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <RootNamespace>DirectXHook</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <ProjectName>DirectXHook</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -80,14 +79,13 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -110,9 +108,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>dxgi.dll</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>dxgi</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -121,6 +121,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>dxgi</TargetName>
+    <IncludePath>C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -138,7 +139,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
@@ -148,7 +149,14 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>D3DCompiler.lib;d3d11.lib;d3d12.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\x64\Debug\dxgi.dll" "C:\Program Files (x86)\Steam\steamapps\common\MonsterHunterRise\"
+XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook\hook_textures" "C:\Program Files (x86)\Steam\steamapps\common\MonsterHunterRise\hook_textures\"
+XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook\hook_fonts" "C:\Program Files (x86)\Steam\steamapps\common\MonsterHunterRise\hook_fonts\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -167,39 +175,37 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>D3DCompiler.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>D3DCompiler.lib;d3d11.lib;d3d12.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\Release\dxgi.dll" "E:\Games\DiRT 2"
-XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_textures" "E:\Games\DiRT 2\hook_textures\"
-XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_fonts" "E:\Games\DiRT 2\hook_fonts\"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;DIRECTX11HOOK_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>D3DCompiler.lib;d3d11.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>D3DCompiler.lib;d3d11.lib;d3d12.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\x64\Release\dxgi.dll" "E:\Games\Divinity Original Sin 2\bin"
-XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_textures" "E:\Games\Divinity Original Sin 2\bin\hook_textures\"
-XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectX11Hook\DirectX11Hook\hook_fonts" "E:\Games\Divinity Original Sin 2\bin\hook_fonts\"</Command>
+      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\x64\Release\dxgi.dll" "C:\Program Files (x86)\Steam\steamapps\common\MonsterHunterRise\"
+XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook\hook_textures" "C:\Program Files (x86)\Steam\steamapps\common\MonsterHunterRise\hook_textures\"
+XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook\hook_fonts" "C:\Program Files (x86)\Steam\steamapps\common\MonsterHunterRise\hook_fonts\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
