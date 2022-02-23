@@ -10,3 +10,4 @@ DirectXHook/packages.config
 *.ipdb
 *.pdb
 DirectXHook/settings.cfg
+*.user
