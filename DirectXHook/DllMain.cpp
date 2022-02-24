@@ -4,9 +4,9 @@
 #include "Overlays/RiseDpsMeter/RiseDpsMeter.h"
 
 // JmpToAddr() is a function written in assembly.
-// We use this to do primitive jumps to memory locations without any strings attached.
+// We use this function to do primitive jumps to function addresses without any strings attached.
 extern "C" int JmpToAddr();
-FARPROC procAddresses[21]; // Original .dll function addresses
+FARPROC dxgiFunctions[21];
 
 DWORD WINAPI MainThread(LPVOID lpParam)
 {
@@ -20,44 +20,47 @@ DWORD WINAPI MainThread(LPVOID lpParam)
 
 BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 {
-	HMODULE originalDll = 0;
+	HMODULE dxgi = 0;
 
 	if (reason == DLL_PROCESS_ATTACH)
 	{
 		DisableThreadLibraryCalls(module);
 
-		originalDll = LoadLibrary("C:\\Windows\\System32\\dxgi.dll");
-		if(!originalDll) return false;
+		dxgi = LoadLibrary("C:\\Windows\\System32\\dxgi.dll");
+		if (!dxgi)
+		{
+			return false;
+		}
 
 		// Find function addresses we need for forward exporting
-		procAddresses[0] = GetProcAddress(originalDll, "ApplyCompatResolutionQuirking");
-		procAddresses[1] = GetProcAddress(originalDll, "CompatString");
-		procAddresses[2] = GetProcAddress(originalDll, "CompatValue");
-		procAddresses[3] = GetProcAddress(originalDll, "CreateDXGIFactory");
-		procAddresses[4] = GetProcAddress(originalDll, "CreateDXGIFactory1");
-		procAddresses[5] = GetProcAddress(originalDll, "CreateDXGIFactory2");
-		procAddresses[6] = GetProcAddress(originalDll, "DXGID3D10CreateDevice");
-		procAddresses[7] = GetProcAddress(originalDll, "DXGID3D10CreateLayeredDevice");
-		procAddresses[8] = GetProcAddress(originalDll, "DXGID3D10ETWRundown");
-		procAddresses[9] = GetProcAddress(originalDll, "DXGID3D10GetLayeredDeviceSize");
-		procAddresses[10] = GetProcAddress(originalDll, "DXGID3D10RegisterLayers");
-		procAddresses[11] = GetProcAddress(originalDll, "DXGIDeclareAdapterRemovalSupport");
-		procAddresses[12] = GetProcAddress(originalDll, "DXGIDumpJournal");
-		procAddresses[13] = GetProcAddress(originalDll, "DXGIGetDebugInterface1");
-		procAddresses[14] = GetProcAddress(originalDll, "DXGIReportAdapterConfiguration");
-		procAddresses[15] = GetProcAddress(originalDll, "DXGIRevertToSxS");
-		procAddresses[16] = GetProcAddress(originalDll, "PIXBeginCapture");
-		procAddresses[17] = GetProcAddress(originalDll, "PIXEndCapture");
-		procAddresses[18] = GetProcAddress(originalDll, "PIXGetCaptureState");
-		procAddresses[19] = GetProcAddress(originalDll, "SetAppCompatStringPointer");
-		procAddresses[20] = GetProcAddress(originalDll, "UpdateHMDEmulationStatus");
+		dxgiFunctions[0] = GetProcAddress(dxgi, "ApplyCompatResolutionQuirking");
+		dxgiFunctions[1] = GetProcAddress(dxgi, "CompatString");
+		dxgiFunctions[2] = GetProcAddress(dxgi, "CompatValue");
+		dxgiFunctions[3] = GetProcAddress(dxgi, "CreateDXGIFactory");
+		dxgiFunctions[4] = GetProcAddress(dxgi, "CreateDXGIFactory1");
+		dxgiFunctions[5] = GetProcAddress(dxgi, "CreateDXGIFactory2");
+		dxgiFunctions[6] = GetProcAddress(dxgi, "DXGID3D10CreateDevice");
+		dxgiFunctions[7] = GetProcAddress(dxgi, "DXGID3D10CreateLayeredDevice");
+		dxgiFunctions[8] = GetProcAddress(dxgi, "DXGID3D10ETWRundown");
+		dxgiFunctions[9] = GetProcAddress(dxgi, "DXGID3D10GetLayeredDeviceSize");
+		dxgiFunctions[10] = GetProcAddress(dxgi, "DXGID3D10RegisterLayers");
+		dxgiFunctions[11] = GetProcAddress(dxgi, "DXGIDeclareAdapterRemovalSupport");
+		dxgiFunctions[12] = GetProcAddress(dxgi, "DXGIDumpJournal");
+		dxgiFunctions[13] = GetProcAddress(dxgi, "DXGIGetDebugInterface1");
+		dxgiFunctions[14] = GetProcAddress(dxgi, "DXGIReportAdapterConfiguration");
+		dxgiFunctions[15] = GetProcAddress(dxgi, "DXGIRevertToSxS");
+		dxgiFunctions[16] = GetProcAddress(dxgi, "PIXBeginCapture");
+		dxgiFunctions[17] = GetProcAddress(dxgi, "PIXEndCapture");
+		dxgiFunctions[18] = GetProcAddress(dxgi, "PIXGetCaptureState");
+		dxgiFunctions[19] = GetProcAddress(dxgi, "SetAppCompatStringPointer");
+		dxgiFunctions[20] = GetProcAddress(dxgi, "UpdateHMDEmulationStatus");
 
 		// Start hooking on a new thread inside the current process
 		CreateThread(0, 0x1000, &MainThread, 0, 0, NULL);
 	}
 	else if (reason == DLL_PROCESS_DETACH)
 	{
-		FreeLibrary(originalDll);
+		FreeLibrary(dxgi);
 		return 1;
 	}
 
@@ -65,99 +68,99 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 }
 
 /* 
-* These are the functions our .dll exports for the application to use, 
-* we jump to the real .dll's functions to perform these for us (because 
-* we don't actually want to implement these functions).
+* These are the functions our .dll exports for the application to use.
+* We jump to the real .dll's exported functions to perform these for us (because we don't actually want
+* to implement these functions).
 * I used a third-party tool to automatically create a template proxy .dll,
 * https://www.codeproject.com/Articles/1179147/ProxiFy-Automatic-Proxy-DLL-Generation
 * By using this you don't have to manually write all the exports or the module definition file (.def)
 */
 extern "C"
 {
-	FARPROC procAddr = NULL;
+	FARPROC functionAddress = NULL;
 
 	void PROXY_ApplyCompatResolutionQuirking() {
-		procAddr = procAddresses[0];
+		functionAddress = dxgiFunctions[0];
 		JmpToAddr();
 	}
 	void PROXY_CompatString() {
-		procAddr = procAddresses[1];
+		functionAddress = dxgiFunctions[1];
 		JmpToAddr();
 	}
 	void PROXY_CompatValue() {
-		procAddr = procAddresses[2];
+		functionAddress = dxgiFunctions[2];
 		JmpToAddr();
 	}
 	void PROXY_CreateDXGIFactory() {
-		procAddr = procAddresses[3];
+		functionAddress = dxgiFunctions[3];
 		JmpToAddr();
 	}
 	void PROXY_CreateDXGIFactory1() {
-		procAddr = procAddresses[4];
+		functionAddress = dxgiFunctions[4];
 		JmpToAddr();
 	}
 	void PROXY_CreateDXGIFactory2() {
-		procAddr = procAddresses[5];
+		functionAddress = dxgiFunctions[5];
 		JmpToAddr();
 	}
 	void PROXY_DXGID3D10CreateDevice() {
-		procAddr = procAddresses[6];
+		functionAddress = dxgiFunctions[6];
 		JmpToAddr();
 	}
 	void PROXY_DXGID3D10CreateLayeredDevice() {
-		procAddr = procAddresses[7];
+		functionAddress = dxgiFunctions[7];
 		JmpToAddr();
 	}
 	void PROXY_DXGID3D10ETWRundown() {
-		procAddr = procAddresses[8];
+		functionAddress = dxgiFunctions[8];
 		JmpToAddr();
 	}
 	void PROXY_DXGID3D10GetLayeredDeviceSize() {
-		procAddr = procAddresses[9];
+		functionAddress = dxgiFunctions[9];
 		JmpToAddr();
 	}
 	void PROXY_DXGID3D10RegisterLayers() {
-		procAddr = procAddresses[10];
+		functionAddress = dxgiFunctions[10];
 		JmpToAddr();
 	}
 	void PROXY_DXGIDeclareAdapterRemovalSupport() {
-		procAddr = procAddresses[11];
+		functionAddress = dxgiFunctions[11];
 		JmpToAddr();
 	}
 	void PROXY_DXGIDumpJournal() {
-		procAddr = procAddresses[12];
+		functionAddress = dxgiFunctions[12];
 		JmpToAddr();
 	}
 	void PROXY_DXGIGetDebugInterface1() {
-		procAddr = procAddresses[13];
+		functionAddress = dxgiFunctions[13];
 		JmpToAddr();
 	}
 	void PROXY_DXGIReportAdapterConfiguration() {
-		procAddr = procAddresses[14];
+		functionAddress = dxgiFunctions[14];
 		JmpToAddr();
 	}
 	void PROXY_DXGIRevertToSxS() {
-		procAddr = procAddresses[15];
+		functionAddress = dxgiFunctions[15];
 		JmpToAddr();
 	}
 	void PROXY_PIXBeginCapture() {
-		procAddr = procAddresses[16];
+		functionAddress = dxgiFunctions[16];
 		JmpToAddr();
 	}
 	void PROXY_PIXEndCapture() {
-		procAddr = procAddresses[17];
+		functionAddress = dxgiFunctions[17];
 		JmpToAddr();
 	}
 	void PROXY_PIXGetCaptureState() {
-		procAddr = procAddresses[18];
+		functionAddress = dxgiFunctions[18];
 		JmpToAddr();
 	}
 	void PROXY_SetAppCompatStringPointer() {
-		procAddr = procAddresses[19];
+		functionAddress = dxgiFunctions[19];
 		JmpToAddr();
 	}
 	void PROXY_UpdateHMDEmulationStatus() {
-		procAddr = procAddresses[20];
+		functionAddress = dxgiFunctions[20];
 		JmpToAddr();
 	}
 }

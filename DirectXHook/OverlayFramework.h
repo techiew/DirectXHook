@@ -19,19 +19,18 @@ namespace OF
 	{
 		int x = 0;
 		int y = 0;
-		float z = 0; // Used for layering
+		float z = 0;
 		int width = 0;
 		int height = 0;
-		Box* parentBox = nullptr;
-		bool pressed = false; // Whether or not the box is currently being pressed (left mouse button held down)
-		bool clicked = false; // Whether or not the box has been clicked this frame (left mouse button pressed and then released)
-		bool hover = false; // Whether or not the cursor is currently hovering over this box
+		bool pressed = false; // Whether the box is currently being pressed (left mouse button held down)
+		bool clicked = false; // Whether the box has been clicked this frame (left mouse button pressed and then released)
+		bool hover = false; // Whether the cursor is currently hovering over this box
 		bool draggable = true;
 		bool visible = false; // Managed by the framework, do not change 
+		Box* parentBox = nullptr;
 	};
 
 	static const char* ofPrintPrefix = "OverlayFramework >";
-
 	static HWND ofWindow = 0;
 	static int ofWindowWidth = 0;
 	static int ofWindowHeight = 0;
@@ -80,8 +79,6 @@ namespace OF
 			return -1;
 		}
 
-		// Load the blank texture to index 0 if the texture is not loaded already.
-		// Stops any other texture loading unless the blank texture is loaded successfully.
 		if (ofTextures.size() == 0 && filepath != "blank") {
 			if (LoadTexture("blank") != 0) return -1;
 		}
@@ -158,16 +155,19 @@ namespace OF
 		ofActiveFont = ofFonts[font];
 	}
 
-	// Place the given box on top of all other boxes
 	inline void PlaceOnTop(Box* boxOnTop)
 	{
-		int boxIndex = 0;
+		size_t boxIndex = 0;
 		for (int i = 0; i < ofBoxes.size(); i++)
 		{
-			if (ofBoxes[i] == boxOnTop) boxIndex = i;
+			if (ofBoxes[i] == boxOnTop)
+			{
+				boxIndex = i;
+				break;
+			}
 		}
-		ofBoxOrder.push_back(boxIndex);
 
+		ofBoxOrder.push_back(boxIndex);
 		for (int i = 0; i < ofBoxOrder.size() - 1; i++)
 		{
 			if (ofBoxes[ofBoxOrder[i]] == ofBoxes[ofBoxOrder.back()])
@@ -384,7 +384,6 @@ namespace OF
 			ofDeltaMouseX = ofDeltaMouseX - ofMouseX;
 			ofDeltaMouseY = ofDeltaMouseY - ofMouseY;
 
-			// Reset last frame's clicked box to not count as clicked anymore
 			if (ofClickedBox != nullptr)
 			{
 				if (ofClickedBox->clicked)
