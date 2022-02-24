@@ -3,10 +3,10 @@ This is a DirectX hook that works with DirectX 11 and DirectX 12. A simple but p
 
 ### Overlay examples
 **A mod for Monster Hunter Rise, [RiseDpsMeter found on NexusMods](https://www.nexusmods.com/monsterhunterrise/mods/289)**
-<add video>
+-add video-
 
 **Test triangle**
-<add video>
+-add video-
 
 ### How to create an overlay
 First, check the wiki page on how to quickly set up the Visual Studio solution.
@@ -15,43 +15,43 @@ When the project is built, "dxgi.dll" will be generated in the project folder. T
 
 #### Create files
 Create a .cpp and .h file in the Overlays folder (optionally put these inside a parent folder):
-<add image>
+-add image-
 
 Create a class that inherits from the IRenderCallback interface and includes "OverlayFramework.h":
-<add image>
+-add image-
 
 Define the Setup() and Render() functions in the .cpp file:
-<add image>
+-add image-
 **Note: InitFramework() must be called on the very first line in Setup().**
 
 Make the hook render your stuff by adding these lines in DllMain.cpp:
-<add image>
+-add image-
 Now we need some stuff to render.
 
 #### Boxes
 All rendering with the overlay framework is done using Boxes:
-<add image>
+-add image-
 Boxes are a simple struct with data that the framework manages.
 
 Create some boxes and render them:
-<add image>
+-add image-
 
 Result:
-<add image>
+-add image-
 
 Boxes can be rendered with either textures or colors:
-<add image>
+-add image-
 **Note: textures must be loaded in Setup().**
 
 Result:
-<add image>
+-add image-
 
 Text can be rendered inside Boxes:
-<add image>
+-add image-
 **Note: a font must be set before rendering text.**
 
 Result:
-<add image>
+-add image-
 
 ### Contributions
 Feel free to create issues or contribute code to the repo.
