@@ -3,7 +3,6 @@ x64/
 Release/
 .vs/
 DirectXHook/x64/
-DirectXHook/packages.config
 *.log
 *.obj
 *.tlog

@@ -2,11 +2,11 @@
 This is a DirectX hook that works with DirectX 11 and DirectX 12. A simple but primitive overlay framework is included.
 
 ### Overlay examples
-**A mod for Monster Hunter Rise, [RiseDpsMeter found on NexusMods](https://www.nexusmods.com/monsterhunterrise/mods/289)**
+#### A mod for Monster Hunter Rise, [RiseDpsMeter found on NexusMods](https://www.nexusmods.com/monsterhunterrise/mods/289)
 
 -add video-
 
-**Test triangle**
+#### Test triangle
 
 -add video-
 
@@ -28,7 +28,7 @@ Define the Setup() and Render() functions in the .cpp file:
 
 -add image-
 
-**Note: InitFramework() must be called on the very first line in Setup().**
+**Note: Setup() is called once and Render() is called every frame. InitFramework() must be called on the very first line in Setup().**
 
 Make the hook render your stuff by adding these lines in DllMain.cpp:
 
