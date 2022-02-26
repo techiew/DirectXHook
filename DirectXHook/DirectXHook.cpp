@@ -40,15 +40,13 @@ void DirectXHook::Hook()
 	m_presentTrampoline = CreateBufferedTrampoline(&OnPresent);
 	m_resizeBuffersTrampoline = CreateBufferedTrampoline(&OnResizeBuffers);
 	m_dummySwapChain = CreateDummySwapChain();
-	auto originalAddresses = HookSwapChainVmt(m_dummySwapChain, m_presentTrampoline, m_resizeBuffersTrampoline);
-	m_originalPresentAddress = originalAddresses.first;
-	m_originalResizeBuffersAddress = originalAddresses.second;
+	HookSwapChainVmt(m_dummySwapChain, m_presentTrampoline, m_resizeBuffersTrampoline);
 
 	if (IsDirectX12Loaded())
 	{
 		m_dummyCommandQueue = CreateDummyCommandQueue();
 		m_executeCommandListsTrampoline = CreateBufferedTrampoline(&OnExecuteCommandLists);
-		m_originalExecuteCommandListsAddress = HookCommandQueueVmt(m_dummyCommandQueue, m_executeCommandListsTrampoline);
+		HookCommandQueueVmt(m_dummyCommandQueue, m_executeCommandListsTrampoline);
 	}
 }
 
@@ -185,7 +183,7 @@ ID3D12CommandQueue* DirectXHook::CreateDummyCommandQueue()
 
 // Hooks the functions that we need in the Virtual Method Table of IDXGISwapChain.
 // A pointer to the VMT of an object exists in the first 4/8 bytes of the object (or the last bytes, depending on the compiler).
-std::pair<uintptr_t, uintptr_t> DirectXHook::HookSwapChainVmt(IDXGISwapChain* dummySwapChain, uintptr_t newPresentAddress, uintptr_t newResizeBuffersAddress)
+void DirectXHook::HookSwapChainVmt(IDXGISwapChain* dummySwapChain, uintptr_t newPresentAddress, uintptr_t newResizeBuffersAddress)
 {
 	int size = sizeof(size_t);
 
@@ -203,8 +201,8 @@ std::pair<uintptr_t, uintptr_t> DirectXHook::HookSwapChainVmt(IDXGISwapChain* du
 	VirtualProtect((void*)vmtPresentIndex, size, PAGE_EXECUTE_READWRITE, &oldProtection);
 	VirtualProtect((void*)vmtResizeBuffersIndex, size, PAGE_EXECUTE_READWRITE, &oldProtection2);
 
-	uintptr_t originalPresentAddress = (*(uintptr_t*)vmtPresentIndex);
-	uintptr_t originalResizeBuffersAddress = (*(uintptr_t*)vmtResizeBuffersIndex);
+	m_originalPresentAddress = (*(uintptr_t*)vmtPresentIndex);
+	m_originalResizeBuffersAddress = (*(uintptr_t*)vmtResizeBuffersIndex);
 
 	// This sets the VMT entries to point towards our functions instead.
 	*(uintptr_t*)vmtPresentIndex = newPresentAddress;
@@ -215,13 +213,11 @@ std::pair<uintptr_t, uintptr_t> DirectXHook::HookSwapChainVmt(IDXGISwapChain* du
 
 	dummySwapChain->Release();
 
-	printf("%s Original Present address: %p\n", m_printPrefix, originalPresentAddress);
-	printf("%s Original ResizeBuffers address: %p\n", m_printPrefix, originalResizeBuffersAddress);
-
-	return std::make_pair(originalPresentAddress, originalResizeBuffersAddress);
+	printf("%s Original Present address: %p\n", m_printPrefix, m_originalPresentAddress);
+	printf("%s Original ResizeBuffers address: %p\n", m_printPrefix, m_originalResizeBuffersAddress);
 }
 
-uintptr_t DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uintptr_t newExecuteCommandListsAddress)
+void DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uintptr_t newExecuteCommandListsAddress)
 {
 	uintptr_t vmtBaseAddress = (*(uintptr_t*)dummyCommandQueue);
 	uintptr_t vmtExecuteCommandListsIndex = (vmtBaseAddress + (8 * 10));
@@ -233,14 +229,12 @@ uintptr_t DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue
 
 	VirtualProtect((void*)vmtExecuteCommandListsIndex, 8, PAGE_EXECUTE_READWRITE, &oldProtection);
 
-	uintptr_t originalExecuteCommandListsAddress = (*(uintptr_t*)vmtExecuteCommandListsIndex);
+	m_originalExecuteCommandListsAddress = (*(uintptr_t*)vmtExecuteCommandListsIndex);
 	*(uintptr_t*)vmtExecuteCommandListsIndex = newExecuteCommandListsAddress;
 
 	VirtualProtect((void*)vmtExecuteCommandListsIndex, 8, oldProtection, &oldProtection);
 
-	printf("%s Original ExecuteCommandLists address: %p\n", m_printPrefix, originalExecuteCommandListsAddress);
-
-	return originalExecuteCommandListsAddress;
+	printf("%s Original ExecuteCommandLists address: %p\n", m_printPrefix, m_originalExecuteCommandListsAddress);
 }
 
 void DirectXHook::SetFunctionHeaders()

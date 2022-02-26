@@ -53,8 +53,8 @@ private:
 	uintptr_t CreateBufferedTrampoline(void* destination);
 	IDXGISwapChain* CreateDummySwapChain();
 	ID3D12CommandQueue* CreateDummyCommandQueue();
-	std::pair<uintptr_t, uintptr_t> HookSwapChainVmt(IDXGISwapChain* dummySwapChain, uintptr_t newPresentAddress, uintptr_t newResizeBuffersAddress);
-	uintptr_t HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uintptr_t newExecuteCommandListsAddress);
+	void HookSwapChainVmt(IDXGISwapChain* dummySwapChain, uintptr_t newPresentAddress, uintptr_t newResizeBuffersAddress);
+	void HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uintptr_t newExecuteCommandListsAddress);
 	static void SetFunctionHeaders();
 	static void RemoveDoubleHooks(uintptr_t trampolineAddress, uintptr_t originalFunctionAddress, std::vector<unsigned char> originalBytes);
 	static uintptr_t FindTrampolineDestination(uintptr_t trampJmp);

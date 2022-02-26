@@ -188,7 +188,7 @@ XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <DisableSpecificWarnings>26451; 4477</DisableSpecificWarnings>
+      <DisableSpecificWarnings>26451; 4477; 6284; 6066</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
