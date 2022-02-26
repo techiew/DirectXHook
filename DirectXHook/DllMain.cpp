@@ -13,7 +13,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
 	DirectXHook dxHook;
 	static RiseDpsMeter riseDpsMeter;
 	dxHook.SetRenderCallback(&riseDpsMeter);
-	dxHook.DrawExamples(true);
+	dxHook.DrawExamples(false);
 	dxHook.Hook();
 	return S_OK;
 }

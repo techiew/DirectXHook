@@ -154,7 +154,7 @@ IDXGISwapChain* DirectXHook::CreateDummySwapChain()
 		printf("%s CreateDeviceAndSwapChain failed: %s\n", m_printPrefix, error.ErrorMessage());
 		DestroyWindow(desc.OutputWindow);
 		UnregisterClass(wc.lpszClassName, GetModuleHandle(nullptr));
-		return false;
+		return nullptr;
 	}
 
 	dummyDevice->Release();

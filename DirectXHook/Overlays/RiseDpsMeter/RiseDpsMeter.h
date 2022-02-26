@@ -81,11 +81,11 @@ private:
 
 	std::vector<uintptr_t> m_playerOneDamagePointerChain =
 	{
-		0x14C076B30,
-		0x98,
-		0x78,
-		0x78,
-		0x600,
+		0x14C0A8A30,
+		0x70,
+		0x30,
+		0xB0,
+		0x4E0,
 		0x18
 	};
 	uintptr_t m_playerOneDamageAddress = 0;

@@ -53,7 +53,7 @@ void RiseDpsMeter::Render()
 			DrawDpsMeter();
 		}
 	}
-	
+
 	if (m_showPlaceholder)
 	{
 		DrawPlaceholder();
@@ -117,7 +117,7 @@ void RiseDpsMeter::DrawPlaceholder()
 
 void RiseDpsMeter::DrawCornerText()
 {
-	DrawText(m_cornerWindow, "RiseDpsMeter v2.0 loaded", 0, 0, 0.5f);
+	DrawText(m_cornerWindow, "RiseDpsMeter v1.1 loaded", 0, 0, 0.5f);
 }
 
 void RiseDpsMeter::UpdateDamageStats()
@@ -145,8 +145,8 @@ void RiseDpsMeter::UpdateDamageStats()
 
 void RiseDpsMeter::UpdateGraph()
 {
-	for (int i = m_graphColumns.size() - 1, j = m_dpsHistory.size() - 1; 
-		i > -1 && j > -1; 
+	for (int i = m_graphColumns.size() - 1, j = m_dpsHistory.size() - 1;
+		i > -1 && j > -1;
 		i--, j--)
 	{
 		if (m_dpsHistory[j] != 0)
@@ -179,9 +179,11 @@ uintptr_t RiseDpsMeter::ReadPointerChain(std::vector<uintptr_t> pointerChain)
 	MEMORY_BASIC_INFORMATION memoryInfo;
 	for (int i = 0; i < pointerChain.size() - 1; i++)
 	{
-		VirtualQuery((void*)pointer, &memoryInfo, sizeof(MEMORY_BASIC_INFORMATION));
-
-		if (memoryInfo.Protect == PAGE_READWRITE && memoryInfo.State == MEM_COMMIT)
+		if (!VirtualQuery((void*)pointer, &memoryInfo, sizeof(MEMORY_BASIC_INFORMATION)))
+		{
+			return 0;
+		} 
+		else if (memoryInfo.Protect == PAGE_READWRITE && memoryInfo.State == MEM_COMMIT)
 		{
 			pointer = *(uintptr_t*)pointer;
 			if (pointer == 0)
