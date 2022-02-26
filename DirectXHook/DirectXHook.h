@@ -15,7 +15,7 @@
 * We have these so we can call these functions through pointers to specific memory addresses.
 *
 * Setting the proper calling convention is important (__stdcall).
-* It makes it so we can write/read function parameters into/from memory in the correct way.
+* It makes it so we can write/read function arguments into/from memory in the correct way.
 * 64-bit functions actually use the __fastcall calling convention, but the compiler changes
 * __stdcall to __fastcall automatically for 64-bit compilation.
 *
@@ -53,8 +53,8 @@ private:
 	uintptr_t CreateBufferedTrampoline(void* destination);
 	IDXGISwapChain* CreateDummySwapChain();
 	ID3D12CommandQueue* CreateDummyCommandQueue();
-	void HookSwapChainVmt(IDXGISwapChain* dummySwapChain, uintptr_t newPresentAddress, uintptr_t newResizeBuffersAddress);
-	void HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uintptr_t newExecuteCommandListsAddress);
+	void HookSwapChainVmt(IDXGISwapChain* dummySwapChain, uintptr_t* originalPresentAddress, uintptr_t* originalResizeBuffersAddress, uintptr_t newPresentAddress, uintptr_t newResizeBuffersAddress);
+	void HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uintptr_t* originalExecuteCommandListsAddress, uintptr_t newExecuteCommandListsAddress);
 	static void SetFunctionHeaders();
 	static void RemoveDoubleHooks(uintptr_t trampolineAddress, uintptr_t originalFunctionAddress, std::vector<unsigned char> originalBytes);
 	static uintptr_t FindTrampolineDestination(uintptr_t trampJmp);
