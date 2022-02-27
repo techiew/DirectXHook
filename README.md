@@ -2,11 +2,11 @@
 This is a DirectX hook that works with DirectX 11 and DirectX 12. A straightforward but primitive overlay framework is included.
 
 ### Overlay examples
-#### A mod for Monster Hunter Rise, [Rise DPS Meter found on NexusMods](https://www.nexusmods.com/monsterhunterrise/mods/289)
+#### A mod for Monster Hunter Rise, ["Rise DPS Meter" found on NexusMods](https://www.nexusmods.com/monsterhunterrise/mods/289)
 
 -add video-
 
-#### A mod for Elden Ring, [Pause the game found on NexusMods](https://www.nexusmods.com/eldenring/mods/43)
+#### A mod for Elden Ring, ["Pause the game" found on NexusMods](https://www.nexusmods.com/eldenring/mods/43)
 
 -add video-
 
