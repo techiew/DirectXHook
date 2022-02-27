@@ -21,14 +21,20 @@ Create a .cpp and .h file in the Overlays folder (optionally put these inside a 
 ![create_files](https://github.com/techiew/DirectXHook/blob/master/pictures/create_files.png)
 
 Create a class that inherits from the IRenderCallback interface and includes "OverlayFramework.h":
+
 ![example_header](https://github.com/techiew/DirectXHook/blob/master/pictures/example_header.png)
 
 Define the Setup() and Render() functions in the .cpp file:
+
 ![example_source](https://github.com/techiew/DirectXHook/blob/master/pictures/example_source.png)
+
 **Note: Setup() is called once and Render() is called every frame. InitFramework() must be called on the very first line in Setup().**
 
 Make the hook render your stuff by adding these lines in DllMain.cpp:
+
 ![dllmain](https://github.com/techiew/DirectXHook/blob/master/pictures/dllmain.png)
+
+But we haven't yet defined anything to render...
 
 ### Boxes
 All rendering with the overlay framework is done using Boxes:
@@ -36,6 +42,12 @@ All rendering with the overlay framework is done using Boxes:
 ![box_struct](https://github.com/techiew/DirectXHook/blob/master/pictures/box_struct.png)
 
 Boxes are a simple struct with data that the framework manages.
+
+- pressed: if the mouse is currently being pressed on this box
+- clicked: if the mouse was previously pressed and then released on the box this frame
+- hover: if the mouse is hovering over the box
+
+The rest are self-explanatory. Do not modify **visible** or **z**.
 
 Create some boxes and render them:
 
