@@ -18,29 +18,21 @@ When the project is built, "dxgi.dll" will be generated in the project folder. T
 #### Create files
 Create a .cpp and .h file in the Overlays folder (optionally put these inside a parent folder):
 
--add image-
+![create_files](https://github.com/techiew/DirectXHook/blob/master/pictures/create_files.png)
 
 Create a class that inherits from the IRenderCallback interface and includes "OverlayFramework.h":
-
--add image-
+![example_header](https://github.com/techiew/DirectXHook/blob/master/pictures/example_header.png)
 
 Define the Setup() and Render() functions in the .cpp file:
-
--add image-
-
+![example_source](https://github.com/techiew/DirectXHook/blob/master/pictures/example_source.png)
 **Note: Setup() is called once and Render() is called every frame. InitFramework() must be called on the very first line in Setup().**
 
 Make the hook render your stuff by adding these lines in DllMain.cpp:
-
--add image-
-
-Now we need some stuff to render.
+![dllmain](https://github.com/techiew/DirectXHook/blob/master/pictures/dllmain.png)
 
 #### Boxes
 All rendering with the overlay framework is done using Boxes:
-
--add image-
-
+![box_struct](https://github.com/techiew/DirectXHook/blob/master/pictures/box_struct.png)
 Boxes are a simple struct with data that the framework manages.
 
 Create some boxes and render them:
@@ -48,8 +40,7 @@ Create some boxes and render them:
 -add image-
 
 Result:
-
--add image-
+![rgb_boxes](https://github.com/techiew/DirectXHook/blob/master/pictures/rgb_boxes.png)
 
 Boxes can be rendered with either textures or colors:
 
@@ -58,8 +49,7 @@ Boxes can be rendered with either textures or colors:
 **Note: textures must be loaded in Setup().**
 
 Result:
-
--add image-
+![textures](https://github.com/techiew/DirectXHook/blob/master/pictures/textures.png)
 
 Text can be rendered inside Boxes:
 
@@ -69,7 +59,7 @@ Text can be rendered inside Boxes:
 
 Result:
 
--add image-
+![text](https://github.com/techiew/DirectXHook/blob/master/pictures/text.png)
 
 ### Contributions
 Feel free to create issues or contribute code to the repo.

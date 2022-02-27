@@ -5,14 +5,17 @@ using namespace OF;
 void Example::Setup()
 {
 	InitFramework(m_device, m_spriteBatch, m_window);
-	box = CreateBox(100, 100, 100, 100);   
-	font = LoadFont("hook_fonts\\OpenSans-22.spritefont");
-	SetFont(font);
+	box1 = CreateBox(100, 100, 100, 100);
+	box2 = CreateBox(150, 150, 100, 100);
+	box3 = CreateBox(200, 200, 100, 100);
+	texture1 = LoadTexture("hook_textures\\texture1.png");
+	texture2 = LoadTexture("hook_textures\\texture2.png");
+	texture3 = LoadTexture("hook_textures\\texture3.png");                                   
 }
 
 void Example::Render()
 {
-	DrawText(box, "This is some red text", 0, 0, 1.0f, 255, 0, 0);
-	DrawText(box, "This is some green and smaller text", 0, 40, 0.7f, 0, 255, 0);
-	DrawText(box, "This is some blue text at an angle", 0, 80, 0.7f, 50, 50, 255, 255, 0.7f);
+	DrawBox(box1, texture1);
+	DrawBox(box2, texture2);
+	DrawBox(box3, texture3);
 }
