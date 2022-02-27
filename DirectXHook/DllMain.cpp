@@ -1,7 +1,7 @@
 #include <Windows.h>
 
 #include "DirectXHook.h"
-#include "Overlays/Example/Example.h"
+#include "Overlays/PauseEldenRing/PauseEldenRing.h"
 
 // JmpToAddr() is a function written in assembly.
 // We use this function to do primitive jumps to function addresses without any strings attached.
@@ -11,8 +11,8 @@ FARPROC dxgiFunctions[21];
 DWORD WINAPI MainThread(LPVOID lpParam)
 {
 	DirectXHook dxHook;
-	static Example example;
-	dxHook.SetRenderCallback(&example);
+	static PauseEldenRing pauseEldenRing;
+	dxHook.SetRenderCallback(&pauseEldenRing);
 	dxHook.DrawExamples(false);
 	dxHook.Hook();
 	return S_OK;

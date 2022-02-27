@@ -53,6 +53,7 @@ namespace OF
 	{
 		printf("%s Initialized\n", ofPrintPrefix);
 		ofDevice = device;
+		printf("ofDevice: %p\n", ofDevice.Get());
 		ofSpriteBatch = spriteBatch;
 		ofWindow = window;
 		RECT hwndRect;
@@ -247,10 +248,18 @@ namespace OF
 
 		if (ofTextures.size() < 1) 
 		{
-			if (ofFailedToLoadBlank == false && LoadTexture("blank") != 0) {
-				ofFailedToLoadBlank = true;
+			if (ofFailedToLoadBlank == false) 
+			{
+				if (LoadTexture("blank") != 0)
+				{
+					ofFailedToLoadBlank = true;
+					return;
+				}
 			}
-			return;
+			else
+			{
+				return;
+			}
 		}
 
 		if (textureID < 0 || textureID > ofTextures.size() - 1) 

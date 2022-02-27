@@ -10,7 +10,5 @@ public:
 	void Render();
 
 private:
-	OF::Box* box1;
-	OF::Box* box2;
-	OF::Box* box3;
+	OF::Box* box;
 };

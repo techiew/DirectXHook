@@ -27,6 +27,9 @@
     <Filter Include="Overlays\Example">
       <UniqueIdentifier>{255597e7-70b6-4b01-bbba-9dc8ab156978}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Overlays\PauseEldenRing">
+      <UniqueIdentifier>{d5b60587-b943-4576-89a7-518c38fc4caf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h">
@@ -47,6 +50,9 @@
     <ClInclude Include="Overlays\Example\Example.h">
       <Filter>Overlays\Example</Filter>
     </ClInclude>
+    <ClInclude Include="Overlays\PauseEldenRing\PauseEldenRing.h">
+      <Filter>Overlays\PauseEldenRing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DllMain.cpp">
@@ -63,6 +69,9 @@
     </ClCompile>
     <ClCompile Include="Overlays\Example\Example.cpp">
       <Filter>Overlays\Example</Filter>
+    </ClCompile>
+    <ClCompile Include="Overlays\PauseEldenRing\PauseEldenRing.cpp">
+      <Filter>Overlays\PauseEldenRing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
