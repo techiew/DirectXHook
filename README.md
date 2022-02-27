@@ -43,15 +43,15 @@ All rendering with the overlay framework is done using Boxes:
 
 Boxes are a simple struct with data that the framework manages.
 
-- pressed: if the mouse is currently being pressed on this box
-- clicked: if the mouse was previously pressed and then released on the box this frame
-- hover: if the mouse is hovering over the box
+- **pressed** = if the mouse is currently being pressed on this box
+- **clicked** = if the mouse was previously pressed and then released on the box this frame
+- **hover** = if the mouse is hovering over the box
 
 The rest are self-explanatory. Do not modify **visible** or **z**.
 
 Create some boxes and render them:
 
--add image-
+![rgb_boxes_code](https://github.com/techiew/DirectXHook/blob/master/pictures/rgb_boxes_code.png)
 
 Result:
 
@@ -59,9 +59,9 @@ Result:
 
 Boxes can be rendered with either textures or colors:
 
--add image-
+![textures_code](https://github.com/techiew/DirectXHook/blob/master/pictures/textures_code.png)
 
-**Note: textures must be loaded in Setup().**
+**Note: textures should be loaded in Setup().**
 
 Result:
 
@@ -69,7 +69,7 @@ Result:
 
 Text can be rendered inside Boxes:
 
--add image-
+![text_code](https://github.com/techiew/DirectXHook/blob/master/pictures/text_code.png)
 
 **Note: a font must be set before rendering text.**
 
