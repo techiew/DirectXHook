@@ -19,7 +19,7 @@ First, check the [wiki page](https://github.com/techiew/DirectXHook/wiki/How-to-
 
 When the project is built, "dxgi.dll" will be generated in the project folder. This can be copied next to a game executable which uses DirectX 11 or 12. The game will load the .dll automatically on startup and will render what you told it to.
 
-Also note that the "hook_textures" containing "blank.jpg" must be present next to dxgi.dll in order for anything to render.
+Also note that the "hook_textures" folder containing "blank.jpg" must be present next to dxgi.dll in order for anything to render.
 
 ### Create files
 Create a .cpp and .h file in the Overlays folder (optionally put these inside a parent folder):
