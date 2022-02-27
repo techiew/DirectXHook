@@ -276,7 +276,7 @@ namespace OF
 		_DrawBox(box, { 1.0f, 1.0f, 1.0f, 1.0f }, textureID);
 	}
 
-	inline void DrawBox(Box* box, int r, int g, int b, int a)
+	inline void DrawBox(Box* box, int r, int g, int b, int a = 255)
 	{
 		float _r = MapFloatToRange((float)r, 0.0f, 255.0f, 0.0f, 1.0f);
 		float _g = MapFloatToRange((float)g, 0.0f, 255.0f, 0.0f, 1.0f);

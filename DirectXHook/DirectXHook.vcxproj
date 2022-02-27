@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="DirectXHook.h" />
     <ClInclude Include="IRenderCallback.h" />
+    <ClInclude Include="Overlays\Example\Example.h" />
     <ClInclude Include="Overlays\RiseDpsMeter\RiseDpsMeter.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClInclude>
@@ -30,6 +31,7 @@
   <ItemGroup>
     <ClCompile Include="DirectXHook.cpp" />
     <ClCompile Include="DllMain.cpp" />
+    <ClCompile Include="Overlays\Example\Example.cpp" />
     <ClCompile Include="Overlays\RiseDpsMeter\RiseDpsMeter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
