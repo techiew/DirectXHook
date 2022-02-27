@@ -1,5 +1,5 @@
 ## DirectXHook + Overlay Framework
-This is a DirectX hook that works with DirectX 11 and DirectX 12. A simple but primitive overlay framework is included.
+This is a DirectX hook that works with DirectX 11 and DirectX 12. A straightforward but primitive overlay framework is included.
 
 ### Overlay examples
 #### A mod for Monster Hunter Rise, [RiseDpsMeter found on NexusMods](https://www.nexusmods.com/monsterhunterrise/mods/289)
@@ -10,12 +10,12 @@ This is a DirectX hook that works with DirectX 11 and DirectX 12. A simple but p
 
 -add video-
 
-### How to create an overlay
+## How to create an overlay
 First, check the [wiki page](https://github.com/techiew/DirectXHook/wiki/How-to-set-up-the-Visual-Studio-solution) on how to quickly set up the Visual Studio solution.
 
 When the project is built, "dxgi.dll" will be generated in the project folder. This can be copied next to a game executable which uses DirectX 11 or 12. The game will load the .dll automatically on startup and will render what you told it to.
 
-#### Create files
+### Create files
 Create a .cpp and .h file in the Overlays folder (optionally put these inside a parent folder):
 
 ![create_files](https://github.com/techiew/DirectXHook/blob/master/pictures/create_files.png)
@@ -30,9 +30,11 @@ Define the Setup() and Render() functions in the .cpp file:
 Make the hook render your stuff by adding these lines in DllMain.cpp:
 ![dllmain](https://github.com/techiew/DirectXHook/blob/master/pictures/dllmain.png)
 
-#### Boxes
+### Boxes
 All rendering with the overlay framework is done using Boxes:
+
 ![box_struct](https://github.com/techiew/DirectXHook/blob/master/pictures/box_struct.png)
+
 Boxes are a simple struct with data that the framework manages.
 
 Create some boxes and render them:
@@ -40,6 +42,7 @@ Create some boxes and render them:
 -add image-
 
 Result:
+
 ![rgb_boxes](https://github.com/techiew/DirectXHook/blob/master/pictures/rgb_boxes.png)
 
 Boxes can be rendered with either textures or colors:
@@ -49,6 +52,7 @@ Boxes can be rendered with either textures or colors:
 **Note: textures must be loaded in Setup().**
 
 Result:
+
 ![textures](https://github.com/techiew/DirectXHook/blob/master/pictures/textures.png)
 
 Text can be rendered inside Boxes:
