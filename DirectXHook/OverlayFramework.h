@@ -43,7 +43,7 @@ namespace OF
 	static bool ofMousePressed = false;
 	static Box* ofClickedBox = nullptr;
 
-	static Microsoft::WRL::ComPtr<ID3D11Device> ofDevice = nullptr;
+	static ID3D11Device* ofDevice = nullptr;
 	static std::shared_ptr<DirectX::SpriteBatch> ofSpriteBatch = nullptr;
 	static std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> ofTextures = std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>>();
 	static bool ofFailedToLoadBlank = false;
@@ -54,10 +54,11 @@ namespace OF
 	inline void InitFramework(Microsoft::WRL::ComPtr<ID3D11Device> device, std::shared_ptr<DirectX::SpriteBatch> spriteBatch, HWND window)
 	{
 		ofLogger.Log("Initialized");
-		ofDevice = device;
-		ofLogger.Log("ofDevice: %p", ofDevice.Get());
+		ofDevice = device.Get();
+		ofLogger.Log("ofDevice: %p", ofDevice);
 		ofSpriteBatch = spriteBatch;
 		ofWindow = window;
+
 		RECT hwndRect;
 		GetClientRect(ofWindow, &hwndRect);
 		ofWindowWidth = hwndRect.right - hwndRect.left;
@@ -104,7 +105,7 @@ namespace OF
 		file.close();
 
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> texture = nullptr;
-		HRESULT texResult = DirectX::CreateWICTextureFromFile(ofDevice.Get(), wideString.c_str(), nullptr, texture.GetAddressOf());
+		HRESULT texResult = DirectX::CreateWICTextureFromFile(ofDevice, wideString.c_str(), nullptr, texture.GetAddressOf());
 
 		_com_error texErr(texResult);
 		ofLogger.Log("Texture HRESULT: %s", texErr.ErrorMessage());
@@ -142,7 +143,7 @@ namespace OF
 		file.close();
 
 		ofLogger.Log("Font was loaded successfully");
-		ofFonts.push_back(std::make_shared<DirectX::SpriteFont>(ofDevice.Get(), wideString.c_str()));
+		ofFonts.push_back(std::make_shared<DirectX::SpriteFont>(ofDevice, wideString.c_str()));
 
 		return ofFonts.size() - 1;
 	}

@@ -33,6 +33,7 @@ public:
 	void Hook();
 	void DrawExamples(bool doDraw);
 	void SetRenderCallback(IRenderCallback* object);
+	void HandleReshade(bool reshadeLoaded);
 
 private:
 	static Logger m_logger;

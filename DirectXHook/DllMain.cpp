@@ -7,14 +7,16 @@
 // We use this function to do primitive jumps to function addresses without any strings attached.
 extern "C" int JmpToAddr();
 FARPROC dxgiFunctions[21];
+bool reshadeLoaded = false;
 
 DWORD WINAPI MainThread(LPVOID lpParam)
 {
 	DirectXHook dxHook;
 	static PauseEldenRing pauseEldenRing;
-	dxHook.SetRenderCallback(&pauseEldenRing);
 	dxHook.DrawExamples(false);
 	dxHook.Hook();
+	dxHook.HandleReshade(reshadeLoaded);
+	dxHook.SetRenderCallback(&pauseEldenRing);
 	return S_OK;
 }
 
@@ -26,11 +28,15 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 	{
 		DisableThreadLibraryCalls(module);
 
-		LoadLibrary("reshade.dll");
 		dxgi = LoadLibrary("C:\\Windows\\System32\\dxgi.dll");
 		if (!dxgi)
 		{
 			return false;
+		}
+
+		if (LoadLibrary("reshade.dll"))
+		{
+			reshadeLoaded = true;
 		}
 
 		// Find function addresses we need for forward exporting

@@ -58,6 +58,16 @@ void DirectXHook::SetRenderCallback(IRenderCallback* object)
 	m_renderer.SetRenderCallback(object);
 }
 
+// Reshade screws with our overlay code, for some reason...
+// but not if we let it finish doing its business.
+void DirectXHook::HandleReshade(bool reshadeLoaded)
+{
+	if (reshadeLoaded)
+	{
+		Sleep(20000);
+	}
+}
+
 bool DirectXHook::IsDirectX12Loaded()
 {
 	std::vector<HMODULE> modules(0, 0);
@@ -230,6 +240,9 @@ void DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uin
 	*originalExecuteCommandListsAddress = (*(uintptr_t*)vmtExecuteCommandListsIndex);
 	*(uintptr_t*)vmtExecuteCommandListsIndex = newExecuteCommandListsAddress;
 
+	unsigned char test = *(unsigned char*)originalExecuteCommandListsAddress;
+	m_logger.Log("Test: 0x%x", test);
+
 	VirtualProtect((void*)vmtExecuteCommandListsIndex, 8, oldProtection, &oldProtection);
 
 	m_logger.Log("Original ExecuteCommandLists address: %p", m_originalExecuteCommandListsAddress);
@@ -254,13 +267,14 @@ void DirectXHook::RemoveDoubleHooks(uintptr_t trampolineAddress, uintptr_t origi
 
 	if (firstByteAtTrampoline == 0xE9 && firstByteAtOriginal == 0xE9)
 	{
+		m_logger.Log("Found double hook");
 		uintptr_t trampolineDestination = FindTrampolineDestination(trampolineAddress);
 		uintptr_t trampolineDestination2 = FindTrampolineDestination(originalFunctionAddress);
 
 		if (trampolineDestination == trampolineDestination2)
 		{
 			memcpy((void*)originalFunctionAddress, &originalFunctionHeader[0], originalFunctionHeader.size());
-			m_logger.Log("Removed double hook at %p", trampolineAddress);
+			m_logger.Log("Removed double hook at %p", originalFunctionAddress);
 		}
 	}
 
@@ -333,6 +347,7 @@ HRESULT __stdcall DirectXHook::OnResizeBuffers(IDXGISwapChain* pThis, UINT buffe
 */
 void __stdcall DirectXHook::OnExecuteCommandLists(ID3D12CommandQueue* pThis, UINT numCommandLists, const ID3D12CommandList** ppCommandLists)
 {
+	m_logger.Log("ExecuteCommandLists");
 	if (m_firstExecuteCommandLists)
 	{
 		RemoveDoubleHooks(m_executeCommandListsTrampoline, m_originalExecuteCommandListsAddress, m_functionHeaders[2]);
