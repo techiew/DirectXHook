@@ -15,6 +15,7 @@
 #include <comdef.h>
 
 #include "IRenderCallback.h"
+#include "Logger.h"
 
 class Renderer
 {
@@ -28,7 +29,7 @@ public:
 	void SetCommandQueue(ID3D12CommandQueue* commandQueue);
 
 private:
-	std::string m_printPrefix = "Renderer >";
+	Logger m_logger{ "Renderer" };
 	HWND m_window = 0;
 	IRenderCallback* m_callbackObject = nullptr;
 	bool m_firstInit = true;

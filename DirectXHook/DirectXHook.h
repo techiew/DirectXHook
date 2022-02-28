@@ -9,6 +9,7 @@
 
 #include "Renderer.h"
 #include "IRenderCallback.h"
+#include "Logger.h"
 
 /*
 * Here we have typedefs of the functions we want to hook.
@@ -34,7 +35,7 @@ public:
 	void SetRenderCallback(IRenderCallback* object);
 
 private:
-	static std::string m_printPrefix;
+	static Logger m_logger;
 	static Renderer m_renderer;
 	IDXGISwapChain* m_dummySwapChain = nullptr;
 	ID3D12CommandQueue* m_dummyCommandQueue = nullptr;

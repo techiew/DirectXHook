@@ -7,22 +7,22 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 {
 	if (m_firstInit)
 	{
-		printf("%s Initializing renderer...\n", m_printPrefix);
+		m_logger.Log("Initializing renderer...");
 
 		if (SUCCEEDED(swapChain->GetDevice(__uuidof(ID3D11Device), (void**)m_d3d11Device.GetAddressOf())))
 		{
 			m_d3d11Device->GetImmediateContext(&m_d3d11Context);
 			m_spriteBatch = std::make_shared<SpriteBatch>(m_d3d11Context.Get());
-			printf("%s Getting D3D11 device succeeded\n", m_printPrefix);
+			m_logger.Log("Getting D3D11 device succeeded");
 		}
-		else if(!missingCommandQueue && SUCCEEDED(swapChain->GetDevice(__uuidof(ID3D12Device), (void**)m_d3d12Device.GetAddressOf())))
+		else if (!missingCommandQueue && SUCCEEDED(swapChain->GetDevice(__uuidof(ID3D12Device), (void**)m_d3d12Device.GetAddressOf())))
 		{
 			D3D_FEATURE_LEVEL featureLevels = { D3D_FEATURE_LEVEL_11_0 };
 			PrintHresultError(D3D11On12CreateDevice(m_d3d12Device.Get(), NULL, &featureLevels, 1, reinterpret_cast<IUnknown**>(m_commandQueue.GetAddressOf()), 1, 0, &m_d3d11Device, &m_d3d11Context, nullptr));
 			PrintHresultError(m_d3d11Device.As(&m_d3d11On12Device));
 			PrintHresultError(swapChain->QueryInterface(__uuidof(IDXGISwapChain3), &swapChain3));
 			m_spriteBatch = std::make_shared<SpriteBatch>(m_d3d11Context.Get());
-			printf("%s Getting D3D12 device succeeded\n", m_printPrefix);
+			m_logger.Log("Getting D3D12 device succeeded");
 		}
 		else
 		{
@@ -31,7 +31,7 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 	}
 	else
 	{
-		printf("%s Resizing buffers...\n", m_printPrefix);
+		m_logger.Log("Resizing buffers...");
 	}
 
 	DXGI_SWAP_CHAIN_DESC desc;
@@ -50,8 +50,8 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 	GetClientRect(desc.OutputWindow, &hwndRect);
 	m_windowWidth = hwndRect.right - hwndRect.left;
 	m_windowHeight = hwndRect.bottom - hwndRect.top;
-	printf("%s Window width: %i\n", m_printPrefix, m_windowWidth);
-	printf("%s Window height: %i\n", m_printPrefix, m_windowHeight);
+	m_logger.Log("Window width: %i", m_windowWidth);
+	m_logger.Log("Window height: %i", m_windowHeight);
 	m_window = desc.OutputWindow;
 
 	ZeroMemory(&m_viewport, sizeof(D3D11_VIEWPORT));
@@ -106,8 +106,8 @@ bool Renderer::Init(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 
 	if (m_firstInit)
 	{
-		printf("%s Successfully initialized the renderer\n", m_printPrefix);
-		printf("%s Now rendering...\n", m_printPrefix);
+		m_logger.Log("Successfully initialized the renderer");
+		m_logger.Log("Now rendering...");
 	}
 
 	m_firstInit = false;
@@ -223,7 +223,7 @@ void Renderer::CreatePipeline()
 
 ComPtr<ID3DBlob> Renderer::LoadShader(const char* shader, std::string targetShaderVersion, std::string shaderEntry)
 {
-	printf("%s Loading shader: %s\n", m_printPrefix, shaderEntry.c_str());
+	m_logger.Log("Loading shader: %s", shaderEntry.c_str());
 	ComPtr<ID3DBlob> errorBlob = nullptr;
 	ComPtr<ID3DBlob> shaderBlob;
 
@@ -233,7 +233,7 @@ ComPtr<ID3DBlob> Renderer::LoadShader(const char* shader, std::string targetShad
 	{
 		char error[256]{ 0 };
 		memcpy(error, errorBlob->GetBufferPointer(), errorBlob->GetBufferSize());
-		printf("%s Shader error: %s\n", m_printPrefix, error);
+		m_logger.Log("Shader error: %s", error);
 		return nullptr;
 	}
 
@@ -332,7 +332,7 @@ void Renderer::CreateExampleFont()
 	}
 	else
 	{
-		printf("%s Failed to load the example font\n", m_printPrefix);
+		m_logger.Log("Failed to load the example font");
 	}
 }
 
@@ -376,7 +376,7 @@ void Renderer::DrawExampleTriangle()
 
 	if (hit == 2)
 	{
-		printf("%s Hit the corner!\n", m_printPrefix); // For some reason this prints twice sometimes?
+		m_logger.Log("Hit the corner!"); // For some reason this prints twice sometimes?
 	}
 
 	m_triangleCounter += 0.01f;
@@ -485,7 +485,7 @@ void Renderer::OnPresent(IDXGISwapChain* pThis, UINT syncInterval, UINT flags)
 
 void Renderer::OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags)
 {
-	printf("%s ResizeBuffers was called!\n", m_printPrefix);
+	m_logger.Log("ResizeBuffers was called!");
 	m_resizeBuffers = true;
 
 	for (int i = 0; i < m_bufferCount; i++)
@@ -532,5 +532,5 @@ void Renderer::PrintHresultError(HRESULT hr)
 		return;
 	}
 	_com_error err(hr);
-	printf("%s %s\n", m_printPrefix, err.ErrorMessage());
+	m_logger.Log("%s", err.ErrorMessage());
 }

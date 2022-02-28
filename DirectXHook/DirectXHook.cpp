@@ -1,7 +1,7 @@
 #include "DirectXHook.h"
 
 // Static members
-std::string DirectXHook::m_printPrefix = "DirectXHook >";
+Logger DirectXHook::m_logger{ "DirectXHook" };
 Renderer DirectXHook::m_renderer;
 uintptr_t DirectXHook::m_presentTrampoline = 0;
 uintptr_t DirectXHook::m_resizeBuffersTrampoline = 0;
@@ -33,9 +33,7 @@ DirectXHook::DirectXHook()
 
 void DirectXHook::Hook()
 {
-	printf("%s Hooking...\n", m_printPrefix);
-
-	Sleep(5000); // Helps against double hooks
+	m_logger.Log("Hooking...");
 
 	m_presentTrampoline = CreateBufferedTrampoline(&OnPresent);
 	m_resizeBuffersTrampoline = CreateBufferedTrampoline(&OnResizeBuffers);
@@ -74,7 +72,7 @@ bool DirectXHook::IsDirectX12Loaded()
 		GetModuleBaseName(GetCurrentProcess(), module, &lpBaseName[0], 10);
 		if (lpBaseName == std::string("d3d12.dll"))
 		{
-			printf("%s DirectX 12 is loaded\n", m_printPrefix);
+			m_logger.Log("DirectX 12 is loaded");
 			return true;
 		}
 	}
@@ -91,13 +89,13 @@ uintptr_t DirectXHook::CreateBufferedTrampoline(void* destination)
 
 	if (trampoline == 0)
 	{
-		printf("%s Failed to allocate memory for the hook!\n", m_printPrefix);
+		m_logger.Log("Failed to allocate memory for the hook!");
 		return 0;
 	}
 
 	memset((void*)trampoline, 0x90, size);
 
-	printf("%s Allocated memory at: %p\n", m_printPrefix, trampoline);
+	m_logger.Log("Allocated memory at: %p", trampoline);
 
 #ifdef _WIN64
 	*(uintptr_t*)(trampoline + 14) = 0x00000000000025FF;
@@ -149,7 +147,7 @@ IDXGISwapChain* DirectXHook::CreateDummySwapChain()
 	if (FAILED(result))
 	{
 		_com_error error(result);
-		printf("%s CreateDeviceAndSwapChain failed: %s\n", m_printPrefix, error.ErrorMessage());
+		m_logger.Log("CreateDeviceAndSwapChain failed: %s", error.ErrorMessage());
 		DestroyWindow(desc.OutputWindow);
 		UnregisterClass(wc.lpszClassName, GetModuleHandle(nullptr));
 		return nullptr;
@@ -159,7 +157,7 @@ IDXGISwapChain* DirectXHook::CreateDummySwapChain()
 	DestroyWindow(desc.OutputWindow);
 	UnregisterClass(wc.lpszClassName, GetModuleHandle(nullptr));
 
-	printf("%s CreateDeviceAndSwapChain succeeded\n", m_printPrefix);
+	m_logger.Log("CreateDeviceAndSwapChain succeeded");
 
 	return dummySwapChain;
 }
@@ -176,7 +174,7 @@ ID3D12CommandQueue* DirectXHook::CreateDummyCommandQueue()
 	ID3D12CommandQueue* dummyCommandQueue;
 	d12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&dummyCommandQueue));
 
-	printf("%s Command queue: %p\n", m_printPrefix, dummyCommandQueue);
+	m_logger.Log("Command queue: %p", dummyCommandQueue);
 
 	return dummyCommandQueue;
 }
@@ -191,9 +189,9 @@ void DirectXHook::HookSwapChainVmt(IDXGISwapChain* dummySwapChain, uintptr_t* or
 	uintptr_t vmtPresentIndex = (vmtBaseAddress + (size * 8));
 	uintptr_t vmtResizeBuffersIndex = (vmtBaseAddress + (size * 13));
 
-	printf("%s SwapChain VMT base address: %p\n", m_printPrefix, vmtBaseAddress);
-	printf("%s SwapChain VMT Present index: %p\n", m_printPrefix, vmtPresentIndex);
-	printf("%s SwapChain VMT ResizeBuffers index: %p\n", m_printPrefix, vmtResizeBuffersIndex);
+	m_logger.Log("SwapChain VMT base address: %p", vmtBaseAddress);
+	m_logger.Log("SwapChain VMT Present index: %p", vmtPresentIndex);
+	m_logger.Log("SwapChain VMT ResizeBuffers index: %p", vmtResizeBuffersIndex);
 
 	DWORD oldProtection;
 	DWORD oldProtection2;
@@ -213,8 +211,8 @@ void DirectXHook::HookSwapChainVmt(IDXGISwapChain* dummySwapChain, uintptr_t* or
 
 	dummySwapChain->Release();
 
-	printf("%s Original Present address: %p\n", m_printPrefix, m_originalPresentAddress);
-	printf("%s Original ResizeBuffers address: %p\n", m_printPrefix, m_originalResizeBuffersAddress);
+	m_logger.Log("Original Present address: %p", m_originalPresentAddress);
+	m_logger.Log("Original ResizeBuffers address: %p", m_originalResizeBuffersAddress);
 }
 
 void DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uintptr_t* originalExecuteCommandListsAddress, uintptr_t newExecuteCommandListsAddress)
@@ -222,8 +220,8 @@ void DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uin
 	uintptr_t vmtBaseAddress = (*(uintptr_t*)dummyCommandQueue);
 	uintptr_t vmtExecuteCommandListsIndex = (vmtBaseAddress + (8 * 10));
 
-	printf("%s CommandQueue VMT base address: %p\n", m_printPrefix, vmtBaseAddress);
-	printf("%s ExecuteCommandLists index: %p\n", m_printPrefix, vmtExecuteCommandListsIndex);
+	m_logger.Log("CommandQueue VMT base address: %p", vmtBaseAddress);
+	m_logger.Log("ExecuteCommandLists index: %p", vmtExecuteCommandListsIndex);
 
 	DWORD oldProtection;
 
@@ -234,7 +232,7 @@ void DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uin
 
 	VirtualProtect((void*)vmtExecuteCommandListsIndex, 8, oldProtection, &oldProtection);
 
-	printf("%s Original ExecuteCommandLists address: %p\n", m_printPrefix, m_originalExecuteCommandListsAddress);
+	m_logger.Log("Original ExecuteCommandLists address: %p", m_originalExecuteCommandListsAddress);
 }
 
 void DirectXHook::SetFunctionHeaders()
@@ -262,7 +260,7 @@ void DirectXHook::RemoveDoubleHooks(uintptr_t trampolineAddress, uintptr_t origi
 		if (trampolineDestination == trampolineDestination2)
 		{
 			memcpy((void*)originalFunctionAddress, &originalFunctionHeader[0], originalFunctionHeader.size());
-			printf("%s Removed double hook at %p\n", m_printPrefix, trampolineAddress);
+			m_logger.Log("Removed double hook at %p", trampolineAddress);
 		}
 	}
 

@@ -11,6 +11,8 @@
 #include <chrono>
 #include <string>
 
+#include "Logger.h"
+
 #undef DrawText
 
 namespace OF
@@ -30,7 +32,7 @@ namespace OF
 		Box* parentBox = nullptr;
 	};
 
-	static const char* ofPrintPrefix = "OverlayFramework >";
+	static Logger ofLogger{ "OverlayFramework" };
 	static HWND ofWindow = 0;
 	static int ofWindowWidth = 0;
 	static int ofWindowHeight = 0;
@@ -51,9 +53,9 @@ namespace OF
 	// Gives the framework the required DirectX objects to draw
 	inline void InitFramework(Microsoft::WRL::ComPtr<ID3D11Device> device, std::shared_ptr<DirectX::SpriteBatch> spriteBatch, HWND window)
 	{
-		printf("%s Initialized\n", ofPrintPrefix);
+		ofLogger.Log("Initialized");
 		ofDevice = device;
-		printf("ofDevice: %p\n", ofDevice.Get());
+		ofLogger.Log("ofDevice: %p", ofDevice.Get());
 		ofSpriteBatch = spriteBatch;
 		ofWindow = window;
 		RECT hwndRect;
@@ -76,7 +78,7 @@ namespace OF
 	{
 		if (ofDevice == nullptr)
 		{
-			printf("%s Could not load texture, ofDevice is nullptr! Run InitFramework before attempting to load textures!\n", ofPrintPrefix);
+			ofLogger.Log("Could not load texture, ofDevice is nullptr! Run InitFramework before attempting to load textures!");
 			return -1;
 		}
 
@@ -88,14 +90,14 @@ namespace OF
 			filepath = "hook_textures\\blank.jpg";
 		}
 
-		printf("%s Loading texture: %s\n", ofPrintPrefix, filepath.c_str());
+		ofLogger.Log("Loading texture: %s", filepath.c_str());
 
 		std::wstring wideString(filepath.length(), ' ');
 		std::copy(filepath.begin(), filepath.end(), wideString.begin());
 		std::fstream file = std::fstream(filepath);
 		if (file.fail())
 		{
-			printf("%s Texture loading failed, file was not found at: %s\n", ofPrintPrefix, filepath.c_str());
+			ofLogger.Log("Texture loading failed, file was not found at: %s", filepath.c_str());
 			file.close();
 			return -1;
 		}
@@ -105,10 +107,10 @@ namespace OF
 		HRESULT texResult = DirectX::CreateWICTextureFromFile(ofDevice.Get(), wideString.c_str(), nullptr, texture.GetAddressOf());
 
 		_com_error texErr(texResult);
-		printf("%s Texture HRESULT: %s\n", ofPrintPrefix, texErr.ErrorMessage());
+		ofLogger.Log("Texture HRESULT: %s", texErr.ErrorMessage());
 		if (FAILED(texResult))
 		{
-			printf("%s Texture loading failed: %s\n", ofPrintPrefix, filepath.c_str());
+			ofLogger.Log("Texture loading failed: %s", filepath.c_str());
 			return -1;
 		}
 
@@ -121,25 +123,25 @@ namespace OF
 	{
 		if (ofDevice == nullptr)
 		{
-			printf("%s Could not load font, ofDevice is nullptr! Run InitFramework before attempting to load fonts!\n", ofPrintPrefix);
+			ofLogger.Log("Could not load font, ofDevice is nullptr! Run InitFramework before attempting to load fonts!");
 			return -1;
 		}
 
-		printf("%s Loading font: %s\n", ofPrintPrefix, filepath.c_str());
+		ofLogger.Log("Loading font: %s", filepath.c_str());
 
 		std::fstream file = std::fstream(filepath);
 		std::wstring wideString(filepath.length(), ' ');
 		std::copy(filepath.begin(), filepath.end(), wideString.begin());
 		if (file.fail())
 		{
-			printf("%s Font loading failed: %s\n", ofPrintPrefix, filepath.c_str());
+			ofLogger.Log("Font loading failed: %s", filepath.c_str());
 			file.close();
 			return -1;
 		}
 
 		file.close();
 
-		printf("%s Font was loaded successfully\n", ofPrintPrefix);
+		ofLogger.Log("Font was loaded successfully");
 		ofFonts.push_back(std::make_shared<DirectX::SpriteFont>(ofDevice.Get(), wideString.c_str()));
 
 		return ofFonts.size() - 1;
@@ -149,7 +151,7 @@ namespace OF
 	{
 		if (font > ofFonts.size() - 1 || font < 0)
 		{
-			printf("%s Attempted to set invalid font!\n", ofPrintPrefix);
+			ofLogger.Log("Attempted to set invalid font!");
 			return;
 		}
 
@@ -236,13 +238,13 @@ namespace OF
 	{
 		if (box == nullptr) 
 		{
-			printf("%s Attempted to render a nullptr Box!\n", ofPrintPrefix);
+			ofLogger.Log("Attempted to render a nullptr Box!");
 			return;
 		}
 
 		if (ofSpriteBatch == nullptr)
 		{
-			printf("%s Attempted to render with ofSpriteBatch as nullptr! Run InitFramework before attempting to draw!\n", ofPrintPrefix);
+			ofLogger.Log("Attempted to render with ofSpriteBatch as nullptr! Run InitFramework before attempting to draw!");
 			return;
 		}
 
@@ -264,7 +266,7 @@ namespace OF
 
 		if (textureID < 0 || textureID > ofTextures.size() - 1) 
 		{
-			printf("%s '%i' is an invalid texture ID!\n", ofPrintPrefix, textureID);
+			ofLogger.Log("'%i' is an invalid texture ID!", textureID);
 			return;
 		}
 	
@@ -299,7 +301,7 @@ namespace OF
 	{
 		if (ofActiveFont == nullptr)
 		{
-			printf("%s Attempted to render text with an invalid font, make sure to run SetFont first!\n", ofPrintPrefix);
+			ofLogger.Log("Attempted to render text with an invalid font, make sure to run SetFont first!");
 			return;
 		}
 

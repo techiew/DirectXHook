@@ -26,6 +26,7 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 	{
 		DisableThreadLibraryCalls(module);
 
+		LoadLibrary("reshade.dll");
 		dxgi = LoadLibrary("C:\\Windows\\System32\\dxgi.dll");
 		if (!dxgi)
 		{

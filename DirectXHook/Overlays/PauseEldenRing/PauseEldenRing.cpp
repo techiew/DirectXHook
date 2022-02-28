@@ -23,6 +23,7 @@ void PauseEldenRing::Render()
 			m_gamePaused = false;
 			return;
 		}
+		Sleep(10);
 		MSG msg;
 		PeekMessage(&msg, m_window, 0, 0, PM_NOREMOVE);
 	}

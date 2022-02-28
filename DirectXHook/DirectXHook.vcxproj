@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="DirectXHook.h" />
     <ClInclude Include="IRenderCallback.h" />
+    <ClInclude Include="Logger.h" />
     <ClInclude Include="Overlays\Example\Example.h" />
     <ClInclude Include="Overlays\PauseEldenRing\PauseEldenRing.h" />
     <ClInclude Include="Overlays\RiseDpsMeter\RiseDpsMeter.h">
@@ -199,9 +200,9 @@ XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\
       <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\x64\Release\dxgi.dll" "C:\Program Files (x86)\Steam\steamapps\common\MonsterHunterRise\"
-XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook\hook_textures" "C:\Program Files (x86)\Steam\steamapps\common\MonsterHunterRise\hook_textures\"
-XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook\hook_fonts" "C:\Program Files (x86)\Steam\steamapps\common\MonsterHunterRise\hook_fonts\"</Command>
+      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\x64\Release\dxgi.dll" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\"
+XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook\hook_textures" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\hook_textures\"
+XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook\hook_fonts" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\hook_fonts\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
