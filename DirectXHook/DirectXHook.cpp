@@ -35,6 +35,10 @@ void DirectXHook::Hook()
 {
 	m_logger.Log("Hooking...");
 
+	// If we have this Sleep() then this will stop crashes with some hooks (never crashes on my PC regardless???)
+	// As a side effect MSI afterburner will crash for some reason
+	Sleep(5000);
+
 	m_presentTrampoline = CreateBufferedTrampoline(&OnPresent);
 	m_resizeBuffersTrampoline = CreateBufferedTrampoline(&OnResizeBuffers);
 	m_dummySwapChain = CreateDummySwapChain();
@@ -240,9 +244,6 @@ void DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uin
 	*originalExecuteCommandListsAddress = (*(uintptr_t*)vmtExecuteCommandListsIndex);
 	*(uintptr_t*)vmtExecuteCommandListsIndex = newExecuteCommandListsAddress;
 
-	unsigned char test = *(unsigned char*)originalExecuteCommandListsAddress;
-	m_logger.Log("Test: 0x%x", test);
-
 	VirtualProtect((void*)vmtExecuteCommandListsIndex, 8, oldProtection, &oldProtection);
 
 	m_logger.Log("Original ExecuteCommandLists address: %p", m_originalExecuteCommandListsAddress);
@@ -347,7 +348,6 @@ HRESULT __stdcall DirectXHook::OnResizeBuffers(IDXGISwapChain* pThis, UINT buffe
 */
 void __stdcall DirectXHook::OnExecuteCommandLists(ID3D12CommandQueue* pThis, UINT numCommandLists, const ID3D12CommandList** ppCommandLists)
 {
-	m_logger.Log("ExecuteCommandLists");
 	if (m_firstExecuteCommandLists)
 	{
 		RemoveDoubleHooks(m_executeCommandListsTrampoline, m_originalExecuteCommandListsAddress, m_functionHeaders[2]);

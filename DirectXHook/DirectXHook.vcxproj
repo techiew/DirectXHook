@@ -23,12 +23,12 @@
     <ClInclude Include="IRenderCallback.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Overlays\Example\Example.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="Overlays\PauseEldenRing\PauseEldenRing.h" />
     <ClInclude Include="Overlays\RiseDpsMeter\RiseDpsMeter.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="OverlayFramework.h" />
@@ -37,12 +37,12 @@
     <ClCompile Include="DirectXHook.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="Overlays\Example\Example.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Overlays\PauseEldenRing\PauseEldenRing.cpp" />
     <ClCompile Include="Overlays\RiseDpsMeter\RiseDpsMeter.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
