@@ -5,6 +5,7 @@ using namespace OF;
 void PauseEldenRing::Setup()
 {
 	InitFramework(m_device, m_spriteBatch, m_window);
+	ReadConfigFile(&m_keybind);
 	m_pauseWindow = CreateBox(ofWindowWidth / 2 - 200, ofWindowHeight / 2 - 100, 400, 200);
 	m_topBar = CreateBox(m_pauseWindow, 0, 0, m_pauseWindow->width, 7);
 	m_bottomBar = CreateBox(m_pauseWindow, 0, m_pauseWindow->height, m_pauseWindow->width, 7);
@@ -18,7 +19,7 @@ void PauseEldenRing::Render()
 {
 	while (m_gamePaused)
 	{
-		if (CheckHotkey('P'))
+		if (CheckHotkey(m_keybind))
 		{
 			m_gamePaused = false;
 			return;
@@ -28,7 +29,7 @@ void PauseEldenRing::Render()
 		PeekMessage(&msg, m_window, 0, 0, PM_NOREMOVE);
 	}
 
-	if (CheckHotkey('P'))
+	if (CheckHotkey(m_keybind))
 	{
 		m_gamePaused = true;
 	}
@@ -39,5 +40,33 @@ void PauseEldenRing::Render()
 		DrawBox(m_topBar, m_barTexture);
 		DrawBox(m_bottomBar, m_rotatedBarTexture);
 		DrawText(m_pauseWindow, "Game paused.", 100, 80);
+	}
+}
+
+void PauseEldenRing::ReadConfigFile(unsigned char* keybind)
+{
+	m_configFile.open(m_configFileName, std::fstream::in);
+	if (m_configFile.is_open())
+	{
+		std::string line = "";
+		getline(m_configFile, line);
+		if (line.length() < 3)
+		{
+			*keybind = 'P';
+		}
+		else
+		{
+			*keybind = stoi(line.substr(2, line.length()), 0, 16);
+		}
+		m_configFile.close();
+	}
+	else
+	{
+		m_configFile.open(m_configFileName, std::fstream::out);
+		if (m_configFile.is_open())
+		{
+			m_configFile << "0x50";
+			m_configFile.close();
+		}
 	}
 }

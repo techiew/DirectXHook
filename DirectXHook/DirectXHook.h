@@ -3,9 +3,7 @@
 #include <d3d11.h>
 #include <d3d12.h>
 #include <Windows.h>
-#include <cstdint>
 #include <Psapi.h>
-#include <map>
 
 #include "Renderer.h"
 #include "IRenderCallback.h"
@@ -40,9 +38,6 @@ private:
 	static Renderer m_renderer;
 	IDXGISwapChain* m_dummySwapChain = nullptr;
 	ID3D12CommandQueue* m_dummyCommandQueue = nullptr;
-	static uintptr_t m_presentTrampoline;
-	static uintptr_t m_resizeBuffersTrampoline;
-	static uintptr_t m_executeCommandListsTrampoline;
 	static uintptr_t m_originalPresentAddress;
 	static uintptr_t m_originalResizeBuffersAddress;
 	static uintptr_t m_originalExecuteCommandListsAddress;
@@ -51,14 +46,13 @@ private:
 	static bool m_firstResizeBuffers;
 	static bool m_firstExecuteCommandLists;
 
-	bool IsDirectX12Loaded();
-	uintptr_t CreateBufferedTrampoline(void* destination);
+	bool IsDllLoaded(std::string dllName);
 	IDXGISwapChain* CreateDummySwapChain();
 	ID3D12CommandQueue* CreateDummyCommandQueue();
 	void HookSwapChainVmt(IDXGISwapChain* dummySwapChain, uintptr_t* originalPresentAddress, uintptr_t* originalResizeBuffersAddress, uintptr_t newPresentAddress, uintptr_t newResizeBuffersAddress);
 	void HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uintptr_t* originalExecuteCommandListsAddress, uintptr_t newExecuteCommandListsAddress);
 	static void SetFunctionHeaders();
-	static void RemoveDoubleHooks(uintptr_t trampolineAddress, uintptr_t originalFunctionAddress, std::vector<unsigned char> originalBytes);
+	static void RemoveDoubleHook(uintptr_t trampolineAddress, uintptr_t originalFunctionAddress, std::vector<unsigned char> originalBytes);
 	static uintptr_t FindTrampolineDestination(uintptr_t trampJmp);
 	static HRESULT __stdcall OnPresent(IDXGISwapChain* pThis, UINT syncInterval, UINT flags);
 	static HRESULT __stdcall OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);

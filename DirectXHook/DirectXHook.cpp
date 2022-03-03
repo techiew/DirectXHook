@@ -3,9 +3,6 @@
 // Static members
 Logger DirectXHook::m_logger{ "DirectXHook" };
 Renderer DirectXHook::m_renderer;
-uintptr_t DirectXHook::m_presentTrampoline = 0;
-uintptr_t DirectXHook::m_resizeBuffersTrampoline = 0;
-uintptr_t DirectXHook::m_executeCommandListsTrampoline = 0;
 uintptr_t DirectXHook::m_originalPresentAddress = 0;
 uintptr_t DirectXHook::m_originalResizeBuffersAddress = 0;
 uintptr_t DirectXHook::m_originalExecuteCommandListsAddress = 0;
@@ -34,21 +31,26 @@ DirectXHook::DirectXHook()
 void DirectXHook::Hook()
 {
 	m_logger.Log("Hooking...");
+	m_logger.Log("OnPresent: %p", &OnPresent);
+	m_logger.Log("OnResizeBuffers: %p", &OnResizeBuffers);
 
-	// If we have this Sleep() then this will stop crashes with some hooks (never crashes on my PC regardless???)
-	// As a side effect MSI afterburner will crash for some reason
-	Sleep(5000);
+	// Let other hooks finish their business before we hook.
+	// For some reason, sleeping causes MSI Afterburner to crash the application.
+	Sleep(6000);
 
-	m_presentTrampoline = CreateBufferedTrampoline(&OnPresent);
-	m_resizeBuffersTrampoline = CreateBufferedTrampoline(&OnResizeBuffers);
+	if (IsDllLoaded("RTSSHooks64.dll"))
+	{
+		MessageBox(NULL, "DirectXHook is incompatible with MSI afterburner, please close it and restart.", "Incompatible overlay", MB_OK | MB_ICONINFORMATION | MB_SYSTEMMODAL);
+		return;
+	}
+
 	m_dummySwapChain = CreateDummySwapChain();
-	HookSwapChainVmt(m_dummySwapChain, &m_originalPresentAddress, &m_originalResizeBuffersAddress, m_presentTrampoline, m_resizeBuffersTrampoline);
+	HookSwapChainVmt(m_dummySwapChain, &m_originalPresentAddress, &m_originalResizeBuffersAddress, (uintptr_t)&OnPresent, (uintptr_t)&OnResizeBuffers);
 
-	if (IsDirectX12Loaded())
+	if (IsDllLoaded("d3d12.dll"))
 	{
 		m_dummyCommandQueue = CreateDummyCommandQueue();
-		m_executeCommandListsTrampoline = CreateBufferedTrampoline(&OnExecuteCommandLists);
-		HookCommandQueueVmt(m_dummyCommandQueue, &m_originalExecuteCommandListsAddress, m_executeCommandListsTrampoline);
+		HookCommandQueueVmt(m_dummyCommandQueue, &m_originalExecuteCommandListsAddress, (uintptr_t)&OnExecuteCommandLists);
 	}
 }
 
@@ -72,7 +74,7 @@ void DirectXHook::HandleReshade(bool reshadeLoaded)
 	}
 }
 
-bool DirectXHook::IsDirectX12Loaded()
+bool DirectXHook::IsDllLoaded(std::string dllName)
 {
 	std::vector<HMODULE> modules(0, 0);
 	DWORD lpcbNeeded;
@@ -80,46 +82,18 @@ bool DirectXHook::IsDirectX12Loaded()
 	modules.resize(lpcbNeeded, 0);
 	EnumProcessModules(GetCurrentProcess(), &modules[0], modules.size(), &lpcbNeeded);
 
-	std::string lpBaseName = "XXXXXXXXX";
+	std::string lpBaseName (dllName.length(), 'x');
 	for (auto module : modules)
 	{
-		GetModuleBaseName(GetCurrentProcess(), module, &lpBaseName[0], 10);
-		if (lpBaseName == std::string("d3d12.dll"))
+		GetModuleBaseName(GetCurrentProcess(), module, &lpBaseName[0], lpBaseName.length() + 1);
+		if (lpBaseName == dllName)
 		{
-			m_logger.Log("DirectX 12 is loaded");
+			m_logger.Log("%s is loaded", dllName);
 			return true;
 		}
 	}
 
 	return false;
-}
-
-// Basically creates a trampoline with a buffer of NOP's before the jump.
-// The buffer lets other hooks place their jumps at the top without screwing with our stuff.
-uintptr_t DirectXHook::CreateBufferedTrampoline(void* destination)
-{
-	int size = 28; // Arbitrary
-	uintptr_t trampoline = (uintptr_t)VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-
-	if (trampoline == 0)
-	{
-		m_logger.Log("Failed to allocate memory for the hook!");
-		return 0;
-	}
-
-	memset((void*)trampoline, 0x90, size);
-
-	m_logger.Log("Allocated memory at: %p", trampoline);
-
-#ifdef _WIN64
-	*(uintptr_t*)(trampoline + 14) = 0x00000000000025FF;
-	*(uintptr_t*)(trampoline + 14 + 6) = (uintptr_t)destination;
-#else
-	*(uintptr_t*)(trampoline + 14) = 0x000000E9;
-	*(uintptr_t*)(trampoline + 14 + 1) = (uintptr_t)destination - (trampoline + 14) - 5;
-#endif
-
-	return trampoline;
 }
 
 IDXGISwapChain* DirectXHook::CreateDummySwapChain()
@@ -249,6 +223,7 @@ void DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uin
 	m_logger.Log("Original ExecuteCommandLists address: %p", m_originalExecuteCommandListsAddress);
 }
 
+// Used to fix bytes overwritten by the Steam overlay hook.
 void DirectXHook::SetFunctionHeaders()
 {
 	m_functionHeaders.push_back({ 0x48, 0x89, 0x5C, 0x24, 0x10 }); // Present
@@ -256,9 +231,8 @@ void DirectXHook::SetFunctionHeaders()
 	m_functionHeaders.push_back({ 0x48, 0x89, 0x5C, 0x24, 0x08 }); // ExecuteCommandLists
 }
 
-// This is used to fix potential issues with other hooks such as the Steam overlay, which
-// can place jumps in our trampolines and in the original function at the same time.
-void DirectXHook::RemoveDoubleHooks(uintptr_t trampolineAddress, uintptr_t originalFunctionAddress, std::vector<unsigned char> originalFunctionHeader)
+// This fixes an issue with the Steam overlay hooking in two places at the same time.
+void DirectXHook::RemoveDoubleHook(uintptr_t trampolineAddress, uintptr_t originalFunctionAddress, std::vector<unsigned char> originalFunctionHeader)
 {
 	unsigned char firstByteAtTrampoline = *(unsigned char*)trampolineAddress;
 	unsigned char firstByteAtOriginal = *(unsigned char*)originalFunctionAddress;
@@ -282,7 +256,7 @@ void DirectXHook::RemoveDoubleHooks(uintptr_t trampolineAddress, uintptr_t origi
 	VirtualProtect((void*)originalFunctionAddress, originalFunctionHeader.size(), oldProtection, &oldProtection);
 }
 
-// Finds the final destination of a trampoline placed by other hooks.
+// Finds the final destination of a trampoline placed by other hooks (the Steam overlay, for example).
 uintptr_t DirectXHook::FindTrampolineDestination(uintptr_t firstJmpAddr)
 {
 	int offset = 0;
@@ -314,7 +288,7 @@ HRESULT __stdcall DirectXHook::OnPresent(IDXGISwapChain* pThis, UINT syncInterva
 {
 	if (m_firstPresent)
 	{
-		RemoveDoubleHooks(m_presentTrampoline, m_originalPresentAddress, m_functionHeaders[0]);
+		RemoveDoubleHook((uintptr_t)&OnPresent, m_originalPresentAddress, m_functionHeaders[0]);
 		m_firstPresent = false;
 	}
 
@@ -333,7 +307,7 @@ HRESULT __stdcall DirectXHook::OnResizeBuffers(IDXGISwapChain* pThis, UINT buffe
 {
 	if (m_firstResizeBuffers)
 	{
-		RemoveDoubleHooks(m_resizeBuffersTrampoline, m_originalResizeBuffersAddress, m_functionHeaders[1]);
+		RemoveDoubleHook((uintptr_t)&OnResizeBuffers, m_originalResizeBuffersAddress, m_functionHeaders[1]);
 		m_firstResizeBuffers = false;
 	}
 
@@ -350,7 +324,7 @@ void __stdcall DirectXHook::OnExecuteCommandLists(ID3D12CommandQueue* pThis, UIN
 {
 	if (m_firstExecuteCommandLists)
 	{
-		RemoveDoubleHooks(m_executeCommandListsTrampoline, m_originalExecuteCommandListsAddress, m_functionHeaders[2]);
+		RemoveDoubleHook((uintptr_t)&OnExecuteCommandLists, m_originalExecuteCommandListsAddress, m_functionHeaders[2]);
 		m_firstExecuteCommandLists = false;
 	}
 

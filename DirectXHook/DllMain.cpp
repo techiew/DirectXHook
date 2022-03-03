@@ -34,7 +34,7 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 			return false;
 		}
 
-		// Gives us some more control over ReShade...
+		// Gives us some more control over Reshade...
 		if (LoadLibrary("reshade.dll"))
 		{
 			reshadeLoaded = true;
