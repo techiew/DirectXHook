@@ -10,3 +10,4 @@ DirectXHook/x64/
 *.pdb
 DirectXHook/settings.cfg
 *.user
+/DirectXHook/hook_log.txt

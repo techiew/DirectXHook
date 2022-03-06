@@ -42,6 +42,7 @@ namespace OF
 	static int ofDeltaMouseX = 0, ofDeltaMouseY = 0;
 	static bool ofMousePressed = false;
 	static Box* ofClickedBox = nullptr;
+	constexpr unsigned char HK_NONE = 0x07;
 
 	static ID3D11Device* ofDevice = nullptr;
 	static std::shared_ptr<DirectX::SpriteBatch> ofSpriteBatch = nullptr;
@@ -338,7 +339,7 @@ namespace OF
 		return false;
 	}
 
-	inline bool CheckHotkey(unsigned char key, unsigned char modifier = ' ')
+	inline bool CheckHotkey(unsigned char key, unsigned char modifier = HK_NONE)
 	{
 		static std::vector<unsigned char> notReleasedKeys;
 
@@ -350,7 +351,7 @@ namespace OF
 		bool keyPressed = GetAsyncKeyState(key) & 0x8000;
 		bool modifierPressed = GetAsyncKeyState(modifier) & 0x8000;
 
-		if (key == ' ')
+		if (key == HK_NONE)
 		{
 			return modifierPressed;
 		}
@@ -372,7 +373,7 @@ namespace OF
 			return false;
 		}
 
-		if (modifier != ' ' && !modifierPressed)
+		if (modifier != HK_NONE && !modifierPressed)
 		{
 			return false;
 		}

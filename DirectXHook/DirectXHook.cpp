@@ -1,77 +1,50 @@
 #include "DirectXHook.h"
-
-// Static members
-Logger DirectXHook::m_logger{ "DirectXHook" };
-Renderer DirectXHook::m_renderer;
-uintptr_t DirectXHook::m_originalPresentAddress = 0;
-uintptr_t DirectXHook::m_originalResizeBuffersAddress = 0;
-uintptr_t DirectXHook::m_originalExecuteCommandListsAddress = 0;
-std::vector<std::vector<unsigned char>> DirectXHook::m_functionHeaders;
-bool DirectXHook::m_firstPresent = true;
-bool DirectXHook::m_firstResizeBuffers = true;
-bool DirectXHook::m_firstExecuteCommandLists = true;
+#include "Overlays/PauseEldenRing/PauseEldenRing.h"
 
 DirectXHook::DirectXHook()
 {
-	std::fstream terminalEnableFile;
-	terminalEnableFile.open("hook_enable_terminal.txt", std::fstream::in);
-	if (terminalEnableFile.is_open())
-	{
-		if (AllocConsole())
-		{
-			freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
-			SetWindowText(GetConsoleWindow(), "DirectXHook");
-		}
-		terminalEnableFile.close();
-	}
-
-	SetFunctionHeaders();
+	static PauseEldenRing pauseEldenRing;
+	SetRenderCallback(&pauseEldenRing);
 }
 
 void DirectXHook::Hook()
 {
+	hookInstance = this;
+
 	m_logger.Log("Hooking...");
 	m_logger.Log("OnPresent: %p", &OnPresent);
 	m_logger.Log("OnResizeBuffers: %p", &OnResizeBuffers);
 
+	LoadLibrary("reshade.dll");
+
 	// Let other hooks finish their business before we hook.
 	// For some reason, sleeping causes MSI Afterburner to crash the application.
-	Sleep(6000);
-
+	Sleep(5000);
 	if (IsDllLoaded("RTSSHooks64.dll"))
 	{
-		MessageBox(NULL, "DirectXHook is incompatible with MSI afterburner, please close it and restart.", "Incompatible overlay", MB_OK | MB_ICONINFORMATION | MB_SYSTEMMODAL);
+		MessageBox(NULL, "DirectXHook is incompatible with MSI afterburner and RivaTuner Statistics Server. Please ensure they are closed and restart the game.", "Incompatible overlay", MB_OK | MB_ICONINFORMATION | MB_SYSTEMMODAL);
 		return;
 	}
+	Sleep(25000);
 
 	m_dummySwapChain = CreateDummySwapChain();
-	HookSwapChainVmt(m_dummySwapChain, &m_originalPresentAddress, &m_originalResizeBuffersAddress, (uintptr_t)&OnPresent, (uintptr_t)&OnResizeBuffers);
+	HookSwapChainVmt(m_dummySwapChain, &originalPresentAddress, &originalResizeBuffersAddress, (uintptr_t)&OnPresent, (uintptr_t)&OnResizeBuffers);
 
 	if (IsDllLoaded("d3d12.dll"))
 	{
 		m_dummyCommandQueue = CreateDummyCommandQueue();
-		HookCommandQueueVmt(m_dummyCommandQueue, &m_originalExecuteCommandListsAddress, (uintptr_t)&OnExecuteCommandLists);
+		HookCommandQueueVmt(m_dummyCommandQueue, &originalExecuteCommandListsAddress, (uintptr_t)&OnExecuteCommandLists);
 	}
 }
 
-void DirectXHook::DrawExamples(bool doDraw)
+void DirectXHook::DrawExampleTriangle(bool doDraw)
 {
-	m_renderer.DrawExamples(doDraw);
+	renderer.DrawExampleTriangle(doDraw);
 }
 
 void DirectXHook::SetRenderCallback(IRenderCallback* object)
 {
-	m_renderer.SetRenderCallback(object);
-}
-
-// Reshade screws with our overlay code, for some reason...
-// but not if we let it finish doing its business.
-void DirectXHook::HandleReshade(bool reshadeLoaded)
-{
-	if (reshadeLoaded)
-	{
-		Sleep(20000);
-	}
+	renderer.SetRenderCallback(object);
 }
 
 bool DirectXHook::IsDllLoaded(std::string dllName)
@@ -199,8 +172,8 @@ void DirectXHook::HookSwapChainVmt(IDXGISwapChain* dummySwapChain, uintptr_t* or
 
 	dummySwapChain->Release();
 
-	m_logger.Log("Original Present address: %p", m_originalPresentAddress);
-	m_logger.Log("Original ResizeBuffers address: %p", m_originalResizeBuffersAddress);
+	m_logger.Log("Original Present address: %p", originalPresentAddress);
+	m_logger.Log("Original ResizeBuffers address: %p", originalResizeBuffersAddress);
 }
 
 void DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uintptr_t* originalExecuteCommandListsAddress, uintptr_t newExecuteCommandListsAddress)
@@ -220,118 +193,5 @@ void DirectXHook::HookCommandQueueVmt(ID3D12CommandQueue* dummyCommandQueue, uin
 
 	VirtualProtect((void*)vmtExecuteCommandListsIndex, 8, oldProtection, &oldProtection);
 
-	m_logger.Log("Original ExecuteCommandLists address: %p", m_originalExecuteCommandListsAddress);
-}
-
-// Used to fix bytes overwritten by the Steam overlay hook.
-void DirectXHook::SetFunctionHeaders()
-{
-	m_functionHeaders.push_back({ 0x48, 0x89, 0x5C, 0x24, 0x10 }); // Present
-	m_functionHeaders.push_back({ 0x48, 0x8B, 0xC4, 0x55, 0x41, 0x54 }); // ResizeBuffers
-	m_functionHeaders.push_back({ 0x48, 0x89, 0x5C, 0x24, 0x08 }); // ExecuteCommandLists
-}
-
-// This fixes an issue with the Steam overlay hooking in two places at the same time.
-void DirectXHook::RemoveDoubleHook(uintptr_t trampolineAddress, uintptr_t originalFunctionAddress, std::vector<unsigned char> originalFunctionHeader)
-{
-	unsigned char firstByteAtTrampoline = *(unsigned char*)trampolineAddress;
-	unsigned char firstByteAtOriginal = *(unsigned char*)originalFunctionAddress;
-
-	DWORD oldProtection;
-	VirtualProtect((void*)originalFunctionAddress, originalFunctionHeader.size(), PAGE_EXECUTE_READWRITE, &oldProtection);
-
-	if (firstByteAtTrampoline == 0xE9 && firstByteAtOriginal == 0xE9)
-	{
-		m_logger.Log("Found double hook");
-		uintptr_t trampolineDestination = FindTrampolineDestination(trampolineAddress);
-		uintptr_t trampolineDestination2 = FindTrampolineDestination(originalFunctionAddress);
-
-		if (trampolineDestination == trampolineDestination2)
-		{
-			memcpy((void*)originalFunctionAddress, &originalFunctionHeader[0], originalFunctionHeader.size());
-			m_logger.Log("Removed double hook at %p", originalFunctionAddress);
-		}
-	}
-
-	VirtualProtect((void*)originalFunctionAddress, originalFunctionHeader.size(), oldProtection, &oldProtection);
-}
-
-// Finds the final destination of a trampoline placed by other hooks (the Steam overlay, for example).
-uintptr_t DirectXHook::FindTrampolineDestination(uintptr_t firstJmpAddr)
-{
-	int offset = 0;
-	uintptr_t absolute = 0;
-	uintptr_t destination = 0;
-
-	memcpy(&offset, (void*)(firstJmpAddr + 1), 4);
-	absolute = firstJmpAddr + offset + 5;
-
-	if (*(unsigned char*)absolute == 0xFF)
-	{
-		memcpy(&destination, (void*)(absolute + 6), 8);
-	} 
-	else if (*(unsigned char*)absolute == 0xE9)
-	{
-		memcpy(&offset, (void*)(absolute + 1), 4);
-		destination = absolute + offset + 5;
-	}
-
-	return destination;
-}
-
-/*
-* The real Present will get hooked and then detour to this function.
-* Present is part of the final rendering stage in DirectX.
-* https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-present
-*/
-HRESULT __stdcall DirectXHook::OnPresent(IDXGISwapChain* pThis, UINT syncInterval, UINT flags)
-{
-	if (m_firstPresent)
-	{
-		RemoveDoubleHook((uintptr_t)&OnPresent, m_originalPresentAddress, m_functionHeaders[0]);
-		m_firstPresent = false;
-	}
-
-	m_renderer.OnPresent(pThis, syncInterval, flags);
-	return ((Present)m_originalPresentAddress)(pThis, syncInterval, flags);
-}
-
-/*
-* The real ResizeBuffers will get hooked and then detour to this function.
-* ResizeBuffers usually gets called when the window resizes.
-* We need to hook this so we can release our reference to the render target when it's called.
-* If we don't do this then the game will most likely crash.
-* https://docs.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-resizebuffers
-*/
-HRESULT __stdcall DirectXHook::OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags)
-{
-	if (m_firstResizeBuffers)
-	{
-		RemoveDoubleHook((uintptr_t)&OnResizeBuffers, m_originalResizeBuffersAddress, m_functionHeaders[1]);
-		m_firstResizeBuffers = false;
-	}
-
-	m_renderer.OnResizeBuffers(pThis, bufferCount, width, height, newFormat, swapChainFlags);
-	return ((ResizeBuffers)m_originalResizeBuffersAddress)(pThis, bufferCount, width, height, newFormat, swapChainFlags);
-}
-
-/* 
-* The real ExecuteCommandLists will get hooked and then detour to this function.
-* ExecuteCommandLists gets called when work is to be submitted to the GPU.
-* We need to hook this to grab the command queue so we can use it to create the D3D11On12 device in DirectX 12 games.
-*/
-void __stdcall DirectXHook::OnExecuteCommandLists(ID3D12CommandQueue* pThis, UINT numCommandLists, const ID3D12CommandList** ppCommandLists)
-{
-	if (m_firstExecuteCommandLists)
-	{
-		RemoveDoubleHook((uintptr_t)&OnExecuteCommandLists, m_originalExecuteCommandListsAddress, m_functionHeaders[2]);
-		m_firstExecuteCommandLists = false;
-	}
-
-	if (m_renderer.missingCommandQueue && pThis->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
-	{
-		m_renderer.SetCommandQueue(pThis);
-	}
-
-	((ExecuteCommandLists)m_originalExecuteCommandListsAddress)(pThis, numCommandLists, ppCommandLists);
+	m_logger.Log("Original ExecuteCommandLists address: %p", originalExecuteCommandListsAddress);
 }

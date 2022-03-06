@@ -508,7 +508,7 @@ void Renderer::OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT wid
 	}
 }
 
-void Renderer::DrawExamples(bool doDraw)
+void Renderer::DrawExampleTriangle(bool doDraw)
 {
 	m_drawExamples = doDraw;
 }

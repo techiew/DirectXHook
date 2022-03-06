@@ -19,23 +19,25 @@ void PauseEldenRing::Render()
 {
 	while (m_gamePaused)
 	{
-		if (CheckHotkey(m_keybind))
+		if (MsgWaitForMultipleObjects(0, nullptr, FALSE, 100, QS_ALLINPUT) == WAIT_OBJECT_0)
 		{
-			m_gamePaused = false;
-			return;
+			if (CheckHotkey(m_keybind))
+			{
+				m_gamePaused = false;
+				return;
+			}
+			MSG msg;
+			if (GetMessage(&msg, NULL, 0, 0) != -1)
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
 		}
-		Sleep(10);
-		MSG msg;
-		PeekMessage(&msg, m_window, 0, 0, PM_NOREMOVE);
 	}
 
 	if (CheckHotkey(m_keybind))
 	{
 		m_gamePaused = true;
-	}
-
-	if (m_gamePaused)
-	{
 		DrawBox(m_pauseWindow, 0, 0, 0, 240);
 		DrawBox(m_topBar, m_barTexture);
 		DrawBox(m_bottomBar, m_rotatedBarTexture);
@@ -43,7 +45,7 @@ void PauseEldenRing::Render()
 	}
 }
 
-void PauseEldenRing::ReadConfigFile(unsigned char* keybind)
+void PauseEldenRing::ReadConfigFile(unsigned int* keybind)
 {
 	m_configFile.open(m_configFileName, std::fstream::in);
 	if (m_configFile.is_open())
@@ -56,12 +58,16 @@ void PauseEldenRing::ReadConfigFile(unsigned char* keybind)
 		}
 		else
 		{
-			*keybind = stoi(line.substr(2, line.length()), 0, 16);
+			std::stringstream stringStream(line.substr(2, line.length()));
+			m_logger.Log("Read keybind line: %s", line);
+			stringStream >> std::hex >> *keybind;
+			m_logger.Log("Keybind is: 0x%x", *keybind);
 		}
 		m_configFile.close();
 	}
 	else
 	{
+		m_logger.Log("Using default keybind");
 		m_configFile.open(m_configFileName, std::fstream::out);
 		if (m_configFile.is_open())
 		{

@@ -24,7 +24,7 @@ public:
 
 	void OnPresent(IDXGISwapChain* pThis, UINT syncInterval, UINT flags);
 	void OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
-	void DrawExamples(bool doDraw);
+	void DrawExampleTriangle(bool doDraw);
 	void SetRenderCallback(IRenderCallback* object);
 	void SetCommandQueue(ID3D12CommandQueue* commandQueue);
 

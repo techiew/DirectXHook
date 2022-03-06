@@ -222,7 +222,7 @@ void RiseDpsMeter::CheckHotkeys()
 		}
 	} 
 
-	if (CheckHotkey(' ', VK_LMENU))
+	if (CheckHotkey(HK_NONE, VK_LMENU))
 	{
 		m_dpsMeterWindow->draggable = true;
 		m_placeholderWindow->draggable = true;

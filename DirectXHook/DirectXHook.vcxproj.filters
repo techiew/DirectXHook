@@ -89,7 +89,7 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="JmpToAddr.asm">
+    <MASM Include="Jump.asm">
       <Filter>Source Files\Assembly Code</Filter>
     </MASM>
   </ItemGroup>
