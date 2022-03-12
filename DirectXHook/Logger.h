@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cstdarg>
 
 class Logger
 {
@@ -12,7 +13,7 @@ public:
 		FILE* logFile = LogFile(nullptr);
 		if (logFile == nullptr)
 		{
-			fopen_s(&logFile, "hook_log.txt", "w");
+			fopen_s(&logFile, "directx_hook_log.txt", "w");
 			LogFile(logFile);
 		}
 	}

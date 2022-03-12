@@ -7,7 +7,15 @@ FARPROC originalFunctions[21];
 
 DWORD WINAPI HookThread(LPVOID lpParam)
 {
-	originalDll = LoadLibrary("C:\\Windows\\System32\\dxgi.dll");
+	Sleep(5000);
+	std::string systemPath = "";
+	char dummy[1];
+	UINT pathLength = GetSystemDirectoryA(dummy, 1);
+	systemPath.resize(pathLength);
+	LPSTR lpSystemPath = const_cast<char*>(systemPath.c_str());
+	GetSystemDirectoryA(lpSystemPath, systemPath.size());
+	systemPath = lpSystemPath;
+	originalDll = LoadLibraryA(std::string(systemPath + "\\dxgi.dll").c_str());
 	if (originalDll)
 	{
 		// Set function addresses we need for forward exporting

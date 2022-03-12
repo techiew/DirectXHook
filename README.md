@@ -1,6 +1,8 @@
 ## DirectXHook + Overlay Framework
 This is a DirectX hook that works with DirectX 11 and DirectX 12. A straightforward but primitive overlay framework is included.
 
+**The readme is a little bit outdated because I restructured the code for higher stability a while back.**
+
 ### Overlay examples
 #### A mod for Monster Hunter Rise, ["Rise DPS Meter" found on NexusMods](https://www.nexusmods.com/monsterhunterrise/mods/289)
 
