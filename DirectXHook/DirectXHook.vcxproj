@@ -205,9 +205,8 @@ XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\
       <ModuleDefinitionFile>dxgi.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>COPY "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\x64\Release\dxgi.dll" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\"
-XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook\hook_textures" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\hook_textures\"
-XCOPY /y "C:\Users\Marius\Documents\Programming\Github repositories\DirectXHook\DirectXHook\hook_fonts" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\hook_fonts\"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -10,6 +10,7 @@
 #include <wrl/client.h>
 #include <chrono>
 #include <string>
+#include <cmath>
 
 #include "Logger.h"
 
@@ -24,6 +25,7 @@ namespace OF
 		float z = 0;
 		int width = 0;
 		int height = 0;
+		float rotationDegrees = 0.0f;
 		bool pressed = false; // Whether the box is currently being pressed (left mouse button held down)
 		bool clicked = false; // Whether the box has been clicked this frame (left mouse button pressed and then released)
 		bool hover = false; // Whether the cursor is currently hovering over this box
@@ -43,6 +45,7 @@ namespace OF
 	static bool ofMousePressed = false;
 	static Box* ofClickedBox = nullptr;
 	constexpr unsigned char HK_NONE = 0x07;
+	const double PI = 3.141592653589793238463;
 
 	static ID3D11Device* ofDevice = nullptr;
 	static std::shared_ptr<DirectX::SpriteBatch> ofSpriteBatch = nullptr;
@@ -52,7 +55,7 @@ namespace OF
 	static std::shared_ptr<DirectX::SpriteFont> ofActiveFont = nullptr;
 
 	// Gives the framework the required DirectX objects to draw
-	inline void InitFramework(Microsoft::WRL::ComPtr<ID3D11Device> device, std::shared_ptr<DirectX::SpriteBatch> spriteBatch, HWND window)
+	static void InitFramework(Microsoft::WRL::ComPtr<ID3D11Device> device, std::shared_ptr<DirectX::SpriteBatch> spriteBatch, HWND window)
 	{
 		ofLogger.Log("Initialized");
 		ofDevice = device.Get();
@@ -66,17 +69,17 @@ namespace OF
 		ofWindowHeight = hwndRect.bottom - hwndRect.top;
 	}
 
-	inline int MapIntToRange(int number, int inputStart, int inputEnd, int outputStart, int outputEnd)
+	static int MapIntToRange(int number, int inputStart, int inputEnd, int outputStart, int outputEnd)
 	{
 		return outputStart + (outputEnd - outputStart) * (number - inputStart) / (inputEnd - inputStart);
 	}
 
-	inline float MapFloatToRange(float number, float inputStart, float inputEnd, float outputStart, float outputEnd)
+	static float MapFloatToRange(float number, float inputStart, float inputEnd, float outputStart, float outputEnd)
 	{
 		return outputStart + (outputEnd - outputStart) * (number - inputStart) / (inputEnd - inputStart);
 	}
 
-	inline int LoadTexture(std::string filepath)
+	static int LoadTexture(std::string filepath)
 	{
 		if (ofDevice == nullptr)
 		{
@@ -121,7 +124,7 @@ namespace OF
 		return ofTextures.size() - 1;
 	}
 
-	inline int LoadFont(std::string filepath)
+	static int LoadFont(std::string filepath)
 	{
 		if (ofDevice == nullptr)
 		{
@@ -149,7 +152,7 @@ namespace OF
 		return ofFonts.size() - 1;
 	}
 
-	inline void SetFont(int font)
+	static void SetFont(int font)
 	{
 		if (font > ofFonts.size() - 1 || font < 0)
 		{
@@ -160,7 +163,7 @@ namespace OF
 		ofActiveFont = ofFonts[font];
 	}
 
-	inline void PlaceOnTop(Box* boxOnTop)
+	static void PlaceOnTop(Box* boxOnTop)
 	{
 		size_t boxIndex = 0;
 		for (int i = 0; i < ofBoxes.size(); i++)
@@ -187,7 +190,7 @@ namespace OF
 		}
 	}
 
-	inline POINT GetAbsolutePosition(Box* box)
+	static POINT GetAbsolutePosition(Box* box)
 	{
 		if (box == nullptr)
 		{
@@ -212,7 +215,7 @@ namespace OF
 		return absolutePosition;
 	}
 
-	inline Box* CreateBox(Box* parentBox, int x, int y, int width, int height)
+	static Box* CreateBox(Box* parentBox, int x, int y, int width, int height)
 	{
 		Box* box = new Box;
 		box->x = x;
@@ -231,12 +234,12 @@ namespace OF
 		return ofBoxes.back();
 	}
 
-	inline Box* CreateBox(int x, int y, int width, int height)
+	static Box* CreateBox(int x, int y, int width, int height)
 	{
 		return CreateBox(nullptr, x, y, width, height);
 	}
 	
-	inline void _DrawBox(Box* box, DirectX::XMVECTOR color, int textureID)
+	static void _DrawBox(Box* box, DirectX::XMVECTOR color, int textureID)
 	{
 		if (box == nullptr) 
 		{
@@ -274,22 +277,29 @@ namespace OF
 	
 		POINT position = GetAbsolutePosition(box);
 
+		int oddOrEven = 0;
+		if (box->height % 2 != 0)
+		{
+			oddOrEven = 1;
+		}
 		RECT rect;
-		rect.top = position.y;
-		rect.left = position.x;
-		rect.bottom = position.y + box->height;
-		rect.right = position.x + box->width;
+		rect.top = position.y + ((float)box->height * 0.5) + oddOrEven;
+		rect.left = position.x + ((float)box->width * 0.5) + oddOrEven;
+		rect.bottom = rect.top + box->height;
+		rect.right = rect.left + box->width;
+
+		float rotation = MapFloatToRange(box->rotationDegrees, 0.0f, 360.0f, 0.0f, 2 * PI);
 
 		box->visible = true;
-		ofSpriteBatch->Draw(ofTextures[textureID].Get(), rect, nullptr, color, 0.0f, DirectX::XMFLOAT2(0.0f, 0.0f), DirectX::SpriteEffects_None, box->z);
+		ofSpriteBatch->Draw(ofTextures[textureID].Get(), rect, nullptr, color, rotation, DirectX::XMFLOAT2(0.5f, 0.5f), DirectX::SpriteEffects_None, box->z);
 	}
 
-	inline void DrawBox(Box* box, int textureID)
+	static void DrawBox(Box* box, int textureID)
 	{
 		_DrawBox(box, { 1.0f, 1.0f, 1.0f, 1.0f }, textureID);
 	}
 
-	inline void DrawBox(Box* box, int r, int g, int b, int a = 255)
+	static void DrawBox(Box* box, int r, int g, int b, int a = 255)
 	{
 		float _r = MapFloatToRange((float)r, 0.0f, 255.0f, 0.0f, 1.0f);
 		float _g = MapFloatToRange((float)g, 0.0f, 255.0f, 0.0f, 1.0f);
@@ -298,7 +308,7 @@ namespace OF
 		_DrawBox(box, { _r, _g, _b, _a }, 0);
 	}
 
-	inline void DrawText(Box* box, std::string text, int offsetX = 0, int offsetY = 0, float scale = 1.0f,
+	static void DrawText(Box* box, std::string text, int offsetX = 0, int offsetY = 0, float scale = 1.0f,
 		int r = 255, int g = 255, int b = 255, int a = 255, float rotation = 0.0f)
 	{
 		if (ofActiveFont == nullptr)
@@ -323,7 +333,7 @@ namespace OF
 		ofActiveFont->DrawString(ofSpriteBatch.get(), text.c_str(), textPos, { _r, _g, _b, _a }, rotation, { 0.0f, 0.0f }, scale, DirectX::SpriteEffects_None, box->z);
 	}
 
-	inline bool IsCursorInsideBox(POINT cursorPos, Box* box)
+	static bool IsCursorInsideBox(POINT cursorPos, Box* box)
 	{
 		POINT position = GetAbsolutePosition(box);
 		POINT boxSize = { box->width, box->height };
@@ -339,7 +349,7 @@ namespace OF
 		return false;
 	}
 
-	inline bool CheckHotkey(unsigned char key, unsigned char modifier = HK_NONE)
+	static bool CheckHotkey(unsigned char key, unsigned char modifier = HK_NONE)
 	{
 		static std::vector<unsigned char> notReleasedKeys;
 
@@ -382,7 +392,7 @@ namespace OF
 		return true;
 	}
 
-	inline void CheckMouseEvents()
+	static void CheckMouseEvents()
 	{
 		if (ofWindow == GetForegroundWindow())
 		{

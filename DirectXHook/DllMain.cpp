@@ -7,7 +7,6 @@ FARPROC originalFunctions[21];
 
 DWORD WINAPI HookThread(LPVOID lpParam)
 {
-	Sleep(5000);
 	std::string systemPath = "";
 	char dummy[1];
 	UINT pathLength = GetSystemDirectoryA(dummy, 1);

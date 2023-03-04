@@ -1,10 +1,10 @@
 #include "DirectXHook.h"
-#include "Overlays/PauseEldenRing/PauseEldenRing.h"
+#include "Overlays/Example/Example.h"
 
 DirectXHook::DirectXHook()
 {
-	static PauseEldenRing pauseEldenRing;
-	SetRenderCallback(&pauseEldenRing);
+	static Example example;
+	SetRenderCallback(&example);
 }
 
 void DirectXHook::Hook()
@@ -15,26 +15,11 @@ void DirectXHook::Hook()
 	m_logger.Log("OnPresent: %p", &OnPresent);
 	m_logger.Log("OnResizeBuffers: %p", &OnResizeBuffers);
 
-	LoadLibrary("reshade.dll");
-
-	// Let other hooks finish their business before we hook.
-	// For some reason, sleeping causes MSI Afterburner to crash the application.
-	Sleep(5000);
-	if (IsDllLoaded("RTSSHooks64.dll"))
-	{
-		MessageBox(NULL, "DirectXHook is incompatible with MSI afterburner and RivaTuner Statistics Server. Please ensure they are closed and restart the game.", "Incompatible overlay", MB_OK | MB_ICONINFORMATION | MB_SYSTEMMODAL);
-		return;
-	}
-	Sleep(25000);
-
 	m_dummySwapChain = CreateDummySwapChain();
 	HookSwapChainVmt(m_dummySwapChain, &originalPresentAddress, &originalResizeBuffersAddress, (uintptr_t)&OnPresent, (uintptr_t)&OnResizeBuffers);
 
-	if (IsDllLoaded("d3d12.dll"))
-	{
-		m_dummyCommandQueue = CreateDummyCommandQueue();
-		HookCommandQueueVmt(m_dummyCommandQueue, &originalExecuteCommandListsAddress, (uintptr_t)&OnExecuteCommandLists);
-	}
+	m_dummyCommandQueue = CreateDummyCommandQueue();
+	HookCommandQueueVmt(m_dummyCommandQueue, &originalExecuteCommandListsAddress, (uintptr_t)&OnExecuteCommandLists);
 }
 
 void DirectXHook::DrawExampleTriangle(bool doDraw)
