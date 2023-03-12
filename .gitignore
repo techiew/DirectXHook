@@ -1,13 +1,4 @@
+.vs
 packages/
 x64/
-Release/
-.vs/
-DirectXHook/x64/
-*.log
-*.obj
-*.tlog
-*.ipdb
-*.pdb
-DirectXHook/settings.cfg
-*.user
-/DirectXHook/hook_log.txt
+x86/

@@ -1,3 +1,4 @@
+// These are some generic shaders that we need to render the example triangle
 // Make sure that this file is excluded from the build to avoid compile time errors!
 R""(
 

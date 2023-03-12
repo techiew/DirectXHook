@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Overlays">
+      <UniqueIdentifier>{4e722490-89b1-476c-8f11-f855725e5074}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Overlays\Example">
+      <UniqueIdentifier>{8a12ed8f-5e32-450f-8ec9-985d3e5cde32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Overlays\RiseDpsMeter">
+      <UniqueIdentifier>{f65c6413-9861-46d0-ac93-cc3206db7958}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Overlays\PauseTheGame">
+      <UniqueIdentifier>{49480136-b55a-468a-b6ab-1720b97d7141}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\DirectXHook.def">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\DirectXHook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DllMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="overlays\Example\Example.cpp">
+      <Filter>Overlays\Example</Filter>
+    </ClCompile>
+    <ClCompile Include="overlays\PauseTheGame\PauseTheGame.cpp">
+      <Filter>Overlays\PauseTheGame</Filter>
+    </ClCompile>
+    <ClCompile Include="overlays\RiseDpsMeter\RiseDpsMeter.cpp">
+      <Filter>Overlays\RiseDpsMeter</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="src\Shaders.hlsl">
+      <Filter>Source Files</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\DirectXHook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IRenderCallback.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Logger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MemoryUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\OverlayFramework.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="overlays\Example\Example.h">
+      <Filter>Overlays\Example</Filter>
+    </ClInclude>
+    <ClInclude Include="overlays\RiseDpsMeter\RiseDpsMeter.h">
+      <Filter>Overlays\RiseDpsMeter</Filter>
+    </ClInclude>
+    <ClInclude Include="overlays\PauseTheGame\PauseTheGame.h">
+      <Filter>Overlays\PauseTheGame</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ID3DRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="src\Jump.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
+  </ItemGroup>
+</Project>

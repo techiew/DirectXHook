@@ -1,5 +1,3 @@
-includelib legacy_stdio_definitions.lib
-
 .data
 extern address : qword
 

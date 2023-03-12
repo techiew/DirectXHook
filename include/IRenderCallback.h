@@ -16,15 +16,15 @@ public:
 		std::shared_ptr<DirectX::SpriteBatch> spriteBatch,
 		HWND window)
 	{
-		m_device = device;
-		m_context = context;
-		m_spriteBatch = spriteBatch;
-		m_window = window;
+		this->device = device;
+		this->context = context;
+		this->spriteBatch = spriteBatch;
+		this->window = window;
 	}
 
 protected:
-	Microsoft::WRL::ComPtr<ID3D11Device> m_device = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_context = nullptr;
-	std::shared_ptr<DirectX::SpriteBatch> m_spriteBatch = nullptr;
-	HWND m_window;
+	Microsoft::WRL::ComPtr<ID3D11Device> device = nullptr;
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context = nullptr;
+	std::shared_ptr<DirectX::SpriteBatch> spriteBatch = nullptr;
+	HWND window = NULL;
 };

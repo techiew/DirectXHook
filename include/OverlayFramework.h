@@ -17,46 +17,42 @@
 
 namespace OF
 {
-	struct Box
+	static struct Box
 	{
 		int x = 0;
 		int y = 0;
-		float z = 0;
+		float z = 0.0f;
 		int width = 0;
 		int height = 0;
-		bool pressed = false; // Whether the box is currently being pressed (left mouse button held down)
-		bool clicked = false; // Whether the box has been clicked this frame (left mouse button pressed and then released)
-		bool hover = false; // Whether the cursor is currently hovering over this box
+		bool pressed = false;
+		bool clicked = false;
+		bool hover = false;
 		bool draggable = true;
-		bool visible = false; // Managed by the framework, do not change 
+		bool hasBeenRendered = false;
 		Box* parentBox = nullptr;
 	};
 
-	static Logger ofLogger{ "OverlayFramework" };
+	static Logger logger{ "OverlayFramework" };
 	static HWND ofWindow = 0;
 	static int ofWindowWidth = 0;
 	static int ofWindowHeight = 0;
 	static std::vector<Box*> ofBoxes = std::vector<Box*>();
-	static std::vector<int> ofBoxOrder = std::vector<int>();
-	static int ofMouseX = 0, ofMouseY = 0;
-	static int ofDeltaMouseX = 0, ofDeltaMouseY = 0;
-	static bool ofMousePressed = false;
-	static Box* ofClickedBox = nullptr;
-	constexpr unsigned char HK_NONE = 0x07;
-
-	static ID3D11Device* ofDevice = nullptr;
+	static constexpr unsigned char UNBOUND = 0x07;
+	
+	static Microsoft::WRL::ComPtr<ID3D11Device> ofDevice = nullptr;
 	static std::shared_ptr<DirectX::SpriteBatch> ofSpriteBatch = nullptr;
 	static std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> ofTextures = std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>>();
-	static bool ofFailedToLoadBlank = false;
 	static std::vector<std::shared_ptr<DirectX::SpriteFont>> ofFonts = std::vector<std::shared_ptr<DirectX::SpriteFont>>();
 	static std::shared_ptr<DirectX::SpriteFont> ofActiveFont = nullptr;
 
 	// Gives the framework the required DirectX objects to draw
-	inline void InitFramework(Microsoft::WRL::ComPtr<ID3D11Device> device, std::shared_ptr<DirectX::SpriteBatch> spriteBatch, HWND window)
+	static void InitFramework(
+		Microsoft::WRL::ComPtr<ID3D11Device> device,
+		std::shared_ptr<DirectX::SpriteBatch> spriteBatch,
+		HWND window)
 	{
-		ofLogger.Log("Initialized");
-		ofDevice = device.Get();
-		ofLogger.Log("ofDevice: %p", ofDevice);
+		logger.Log("Initialized");
+		ofDevice = device;
 		ofSpriteBatch = spriteBatch;
 		ofWindow = window;
 
@@ -66,106 +62,129 @@ namespace OF
 		ofWindowHeight = hwndRect.bottom - hwndRect.top;
 	}
 
-	inline int MapIntToRange(int number, int inputStart, int inputEnd, int outputStart, int outputEnd)
+	static int MapIntToRange(
+		int number,
+		int inputStart,
+		int inputEnd,
+		int outputStart,
+		int outputEnd)
 	{
 		return outputStart + (outputEnd - outputStart) * (number - inputStart) / (inputEnd - inputStart);
 	}
 
-	inline float MapFloatToRange(float number, float inputStart, float inputEnd, float outputStart, float outputEnd)
+	static float MapFloatToRange(
+		float number,
+		float inputStart,
+		float inputEnd,
+		float outputStart,
+		float outputEnd)
 	{
 		return outputStart + (outputEnd - outputStart) * (number - inputStart) / (inputEnd - inputStart);
 	}
 
-	inline int LoadTexture(std::string filepath)
+	static int LoadTexture(std::string filepath)
 	{
-		if (ofDevice == nullptr)
+		if (ofDevice.Get() == nullptr)
 		{
-			ofLogger.Log("Could not load texture, ofDevice is nullptr! Run InitFramework before attempting to load textures!");
+			logger.Log("Could not load texture, ofDevice is nullptr! Run InitFramework before attempting to load textures!");
 			return -1;
 		}
 
 		if (ofTextures.size() == 0 && filepath != "blank") {
-			if (LoadTexture("blank") != 0) return -1;
+			if (LoadTexture("blank") != 0)
+			{
+				return -1;
+			}
 		}
 		else if (filepath == "blank")
 		{
 			filepath = "hook_textures\\blank.jpg";
 		}
 
-		ofLogger.Log("Loading texture: %s", filepath.c_str());
+		logger.Log("Loading texture: %s", filepath.c_str());
 
 		std::wstring wideString(filepath.length(), ' ');
 		std::copy(filepath.begin(), filepath.end(), wideString.begin());
 		std::fstream file = std::fstream(filepath);
 		if (file.fail())
 		{
-			ofLogger.Log("Texture loading failed, file was not found at: %s", filepath.c_str());
+			logger.Log("Texture loading failed, file not found: %s", filepath.c_str());
 			file.close();
 			return -1;
 		}
 		file.close();
 
+		HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+		if (FAILED(hr))
+		{
+			logger.Log("Error %#010x when initializing the COM library", hr);
+		}
+		else
+		{
+			logger.Log("Successfully initialized the COM library");
+		}
+
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> texture = nullptr;
-		HRESULT texResult = DirectX::CreateWICTextureFromFile(ofDevice, wideString.c_str(), nullptr, texture.GetAddressOf());
+		HRESULT texResult = DirectX::CreateWICTextureFromFile(ofDevice.Get(), wideString.c_str(), nullptr, texture.GetAddressOf());
 
 		_com_error texErr(texResult);
-		ofLogger.Log("Texture HRESULT: %s", texErr.ErrorMessage());
+		logger.Log("Texture HRESULT: %s", texErr.ErrorMessage());
 		if (FAILED(texResult))
 		{
-			ofLogger.Log("Texture loading failed: %s", filepath.c_str());
+			logger.Log("Texture loading failed: %s", filepath.c_str());
 			return -1;
 		}
 
 		ofTextures.push_back(texture);
-
 		return ofTextures.size() - 1;
 	}
 
-	inline int LoadFont(std::string filepath)
+	static int LoadFont(std::string filepath)
 	{
-		if (ofDevice == nullptr)
+		if (ofDevice.Get() == nullptr)
 		{
-			ofLogger.Log("Could not load font, ofDevice is nullptr! Run InitFramework before attempting to load fonts!");
+			logger.Log("Could not load font, ofDevice is nullptr! Run InitFramework before attempting to load fonts!");
 			return -1;
 		}
 
-		ofLogger.Log("Loading font: %s", filepath.c_str());
+		logger.Log("Loading font: %s", filepath.c_str());
 
 		std::fstream file = std::fstream(filepath);
 		std::wstring wideString(filepath.length(), ' ');
 		std::copy(filepath.begin(), filepath.end(), wideString.begin());
 		if (file.fail())
 		{
-			ofLogger.Log("Font loading failed: %s", filepath.c_str());
+			logger.Log("Font loading failed: %s", filepath.c_str());
 			file.close();
 			return -1;
 		}
 
 		file.close();
 
-		ofLogger.Log("Font was loaded successfully");
-		ofFonts.push_back(std::make_shared<DirectX::SpriteFont>(ofDevice, wideString.c_str()));
+		logger.Log("Font was loaded successfully");
+		ofFonts.push_back(std::make_shared<DirectX::SpriteFont>(ofDevice.Get(), wideString.c_str()));
 
 		return ofFonts.size() - 1;
 	}
 
-	inline void SetFont(int font)
+	static void SetFont(int font)
 	{
 		if (font > ofFonts.size() - 1 || font < 0)
 		{
-			ofLogger.Log("Attempted to set invalid font!");
+			logger.Log("Attempted to set invalid font!");
 			return;
 		}
 
 		ofActiveFont = ofFonts[font];
 	}
 
-	inline void PlaceOnTop(Box* boxOnTop)
+	static void PlaceOnTop(Box* box)
 	{
+		static std::vector<int> ofBoxOrder = std::vector<int>();
 		size_t boxIndex = 0;
-		for (int i = 0; i < ofBoxes.size(); i++)
+		for (size_t i = 0; i < ofBoxes.size(); i++)
 		{
-			if (ofBoxes[i] == boxOnTop)
+			if (ofBoxes[i] == box)
 			{
 				boxIndex = i;
 				break;
@@ -173,7 +192,7 @@ namespace OF
 		}
 
 		ofBoxOrder.push_back(boxIndex);
-		for (int i = 0; i < ofBoxOrder.size() - 1; i++)
+		for (size_t i = 0; i < ofBoxOrder.size() - 1; i++)
 		{
 			if (ofBoxes[ofBoxOrder[i]] == ofBoxes[ofBoxOrder.back()])
 			{
@@ -187,7 +206,7 @@ namespace OF
 		}
 	}
 
-	inline POINT GetAbsolutePosition(Box* box)
+	static POINT GetAbsolutePosition(Box* box)
 	{
 		if (box == nullptr)
 		{
@@ -212,7 +231,7 @@ namespace OF
 		return absolutePosition;
 	}
 
-	inline Box* CreateBox(Box* parentBox, int x, int y, int width, int height)
+	static Box* CreateBox(Box* parentBox, int x, int y, int width, int height)
 	{
 		Box* box = new Box;
 		box->x = x;
@@ -231,22 +250,24 @@ namespace OF
 		return ofBoxes.back();
 	}
 
-	inline Box* CreateBox(int x, int y, int width, int height)
+	static Box* CreateBox(int x, int y, int width, int height)
 	{
 		return CreateBox(nullptr, x, y, width, height);
 	}
 	
-	inline void _DrawBox(Box* box, DirectX::XMVECTOR color, int textureID)
+	static void _DrawBox(Box* box, DirectX::XMVECTOR color, int textureID)
 	{
+		static bool ofFailedToLoadBlank = false;
+
 		if (box == nullptr) 
 		{
-			ofLogger.Log("Attempted to render a nullptr Box!");
+			logger.Log("Attempted to render a nullptr Box!");
 			return;
 		}
 
 		if (ofSpriteBatch == nullptr)
 		{
-			ofLogger.Log("Attempted to render with ofSpriteBatch as nullptr! Run InitFramework before attempting to draw!");
+			logger.Log("Attempted to render with ofSpriteBatch as nullptr! Run InitFramework before attempting to draw!");
 			return;
 		}
 
@@ -268,7 +289,7 @@ namespace OF
 
 		if (textureID < 0 || textureID > ofTextures.size() - 1) 
 		{
-			ofLogger.Log("'%i' is an invalid texture ID!", textureID);
+			logger.Log("'%i' is an invalid texture ID!", textureID);
 			return;
 		}
 	
@@ -280,16 +301,16 @@ namespace OF
 		rect.bottom = position.y + box->height;
 		rect.right = position.x + box->width;
 
-		box->visible = true;
+		box->hasBeenRendered = true;
 		ofSpriteBatch->Draw(ofTextures[textureID].Get(), rect, nullptr, color, 0.0f, DirectX::XMFLOAT2(0.0f, 0.0f), DirectX::SpriteEffects_None, box->z);
 	}
 
-	inline void DrawBox(Box* box, int textureID)
+	static void DrawBox(Box* box, int textureID)
 	{
 		_DrawBox(box, { 1.0f, 1.0f, 1.0f, 1.0f }, textureID);
 	}
 
-	inline void DrawBox(Box* box, int r, int g, int b, int a = 255)
+	static void DrawBox(Box* box, int r, int g, int b, int a = 255)
 	{
 		float _r = MapFloatToRange((float)r, 0.0f, 255.0f, 0.0f, 1.0f);
 		float _g = MapFloatToRange((float)g, 0.0f, 255.0f, 0.0f, 1.0f);
@@ -298,12 +319,21 @@ namespace OF
 		_DrawBox(box, { _r, _g, _b, _a }, 0);
 	}
 
-	inline void DrawText(Box* box, std::string text, int offsetX = 0, int offsetY = 0, float scale = 1.0f,
-		int r = 255, int g = 255, int b = 255, int a = 255, float rotation = 0.0f)
+	static void DrawText(
+		Box* box, 
+		std::string text,
+		int offsetX = 0,
+		int offsetY = 0,
+		float scale = 1.0f,
+		int r = 255,
+		int g = 255,
+		int b = 255,
+		int a = 255,
+		float rotation = 0.0f)
 	{
 		if (ofActiveFont == nullptr)
 		{
-			ofLogger.Log("Attempted to render text with an invalid font, make sure to run SetFont first!");
+			logger.Log("Attempted to render text with an invalid font, make sure to run SetFont first!");
 			return;
 		}
 
@@ -320,10 +350,19 @@ namespace OF
 		float _b = MapFloatToRange((float)b, 0.0f, 255.0f, 0.0f, 1.0f);
 		float _a = MapFloatToRange((float)a, 0.0f, 255.0f, 0.0f, 1.0f);
 
-		ofActiveFont->DrawString(ofSpriteBatch.get(), text.c_str(), textPos, { _r, _g, _b, _a }, rotation, { 0.0f, 0.0f }, scale, DirectX::SpriteEffects_None, box->z);
+		ofActiveFont->DrawString(
+			ofSpriteBatch.get(), 
+			text.c_str(), 
+			textPos, 
+			{ _r, _g, _b, _a }, 
+			rotation, 
+			{ 0.0f, 0.0f },
+			scale, 
+			DirectX::SpriteEffects_None, 
+			box->z);
 	}
 
-	inline bool IsCursorInsideBox(POINT cursorPos, Box* box)
+	static bool IsCursorInsideBox(POINT cursorPos, Box* box)
 	{
 		POINT position = GetAbsolutePosition(box);
 		POINT boxSize = { box->width, box->height };
@@ -339,7 +378,7 @@ namespace OF
 		return false;
 	}
 
-	inline bool CheckHotkey(unsigned char key, unsigned char modifier = HK_NONE)
+	static bool CheckHotkey(unsigned char key, unsigned char modifier = UNBOUND)
 	{
 		static std::vector<unsigned char> notReleasedKeys;
 
@@ -351,7 +390,7 @@ namespace OF
 		bool keyPressed = GetAsyncKeyState(key) & 0x8000;
 		bool modifierPressed = GetAsyncKeyState(modifier) & 0x8000;
 
-		if (key == HK_NONE)
+		if (key == UNBOUND)
 		{
 			return modifierPressed;
 		}
@@ -373,7 +412,7 @@ namespace OF
 			return false;
 		}
 
-		if (modifier != HK_NONE && !modifierPressed)
+		if (modifier != UNBOUND && !modifierPressed)
 		{
 			return false;
 		}
@@ -382,8 +421,13 @@ namespace OF
 		return true;
 	}
 
-	inline void CheckMouseEvents()
+	static void CheckMouseEvents()
 	{
+		static int ofMouseX = 0, ofMouseY = 0;
+		static int ofDeltaMouseX = 0, ofDeltaMouseY = 0;
+		static bool ofMousePressed = false;
+		static Box* ofClickedBox = nullptr;
+
 		if (ofWindow == GetForegroundWindow())
 		{
 			POINT cursorPos;
@@ -407,12 +451,12 @@ namespace OF
 			}
 
 			Box* topMostBox = nullptr;
-			for (int i = 0; i < ofBoxes.size(); i++)
+			for (size_t i = 0; i < ofBoxes.size(); i++)
 			{
 				Box* box = ofBoxes[i];
 				box->hover = false;
 
-				if (!box->visible)
+				if (!box->hasBeenRendered)
 				{
 					continue;
 				}
@@ -433,9 +477,10 @@ namespace OF
 
 			if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
 			{
-				if (topMostBox != nullptr && !ofMousePressed)
+				ofMousePressed = true;
+
+				if (topMostBox != nullptr)
 				{
-					ofMousePressed = true;
 					ofClickedBox = topMostBox;
 					ofClickedBox->pressed = true;
 				}
@@ -448,13 +493,15 @@ namespace OF
 			}
 			else
 			{
+				ofMousePressed = false;
+
 				if (ofClickedBox != nullptr && IsCursorInsideBox(cursorPos, ofClickedBox))
 				{
 					if (ofClickedBox->parentBox != nullptr)
 					{
 						PlaceOnTop(ofClickedBox->parentBox);
 
-						for (int i = 0; i < ofBoxes.size(); i++)
+						for (size_t i = 0; i < ofBoxes.size(); i++)
 						{
 							if (ofClickedBox->parentBox == ofBoxes[i]->parentBox)
 							{
@@ -465,7 +512,7 @@ namespace OF
 
 					PlaceOnTop(ofClickedBox);
 
-					for (int i = 0; i < ofBoxes.size(); i++)
+					for (size_t i = 0; i < ofBoxes.size(); i++)
 					{
 						if (ofBoxes[i]->parentBox == ofClickedBox)
 						{
@@ -476,14 +523,12 @@ namespace OF
 					ofClickedBox->pressed = false;
 					ofClickedBox->clicked = true;
 				}
-
-				ofMousePressed = false;
 			}
 		}
 
 		for (auto box : ofBoxes)
 		{
-			box->visible = false;
+			box->hasBeenRendered = false;
 		}
 	}
 };
