@@ -1,7 +1,7 @@
 ## DirectXHook + Overlay Framework
 This is a DirectX hook that works with DirectX 11 and DirectX 12. A straightforward but primitive overlay framework is included.
 
-**The readme is a little bit outdated because I restructured the code for higher stability a while back.**
+**Readme is not complete, I will update it at some point...**
 
 ### Overlay examples
 #### A mod for Monster Hunter Rise, ["Rise DPS Meter" found on NexusMods](https://www.nexusmods.com/monsterhunterrise/mods/289)
@@ -26,28 +26,28 @@ Also note that the "hook_textures" folder containing "blank.jpg" must be present
 ### Create files
 Create a .cpp and .h file in the Overlays folder (optionally put these inside a parent folder):
 
-![create_files](https://github.com/techiew/DirectXHook/blob/master/pictures/create_files.png)
+![create_files](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/create_files.png)
 
 Create a class that inherits from the IRenderCallback interface and includes "OverlayFramework.h":
 
-![example_header](https://github.com/techiew/DirectXHook/blob/master/pictures/example_header.png)
+![example_header](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/example_header.png)
 
 Define the Setup() and Render() functions in the .cpp file:
 
-![example_source](https://github.com/techiew/DirectXHook/blob/master/pictures/example_source.png)
+![example_source](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/example_source.png)
 
 **Note: Setup() is called once and Render() is called every frame. InitFramework() must be called on the very first line in Setup().**
 
 Make the hook render your stuff by adding these lines in DllMain.cpp:
 
-![dllmain](https://github.com/techiew/DirectXHook/blob/master/pictures/dllmain.png)
+![dllmain](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/dllmain.png)
 
 But we haven't yet defined anything to render...
 
 ### Boxes
 All rendering with the overlay framework is done using Boxes:
 
-![box_struct](https://github.com/techiew/DirectXHook/blob/master/pictures/box_struct.png)
+![box_struct](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/box_struct.png)
 
 Boxes are a simple struct with data that the framework manages.
 
@@ -59,31 +59,31 @@ The rest are self-explanatory. Do not modify **visible** or **z**.
 
 Create some boxes and render them:
 
-![rgb_boxes_code](https://github.com/techiew/DirectXHook/blob/master/pictures/rgb_boxes_code.png)
+![rgb_boxes_code](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/rgb_boxes_code.png)
 
 Result:
 
-![rgb_boxes](https://github.com/techiew/DirectXHook/blob/master/pictures/rgb_boxes.png)
+![rgb_boxes](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/rgb_boxes.png)
 
 Boxes can be rendered with either textures or colors:
 
-![textures_code](https://github.com/techiew/DirectXHook/blob/master/pictures/textures_code.png)
+![textures_code](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/textures_code.png)
 
 **Note: textures should be loaded in Setup().**
 
 Result:
 
-![textures](https://github.com/techiew/DirectXHook/blob/master/pictures/textures.png)
+![textures](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/textures.png)
 
 Text can be rendered inside Boxes:
 
-![text_code](https://github.com/techiew/DirectXHook/blob/master/pictures/text_code.png)
+![text_code](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/text_code.png)
 
 **Note: a font must be set before rendering text.**
 
 Result:
 
-![text](https://github.com/techiew/DirectXHook/blob/master/pictures/text.png)
+![text](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/text.png)
 
 ### Contributions
 Feel free to create issues or contribute code to the repo.
