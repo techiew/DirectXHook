@@ -217,7 +217,7 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 		MemoryUtils::PlaceHook(addrLoadLibraryA, (uintptr_t)&HookLoadLibraryA, &HookLoadLibraryAReturnAddress);
 		MemoryUtils::PlaceHook(addrLoadLibraryW, (uintptr_t)&HookLoadLibraryW, &HookLoadLibraryWReturnAddress);
 		MemoryUtils::PlaceHook(addrLoadLibraryExA, (uintptr_t)&HookLoadLibraryExA, &HookLoadLibraryExAReturnAddress);
-		MemoryUtils::PlaceHook(addrLoadLibraryExW, (uintptr_t)&HookLoadLibraryExW, &HookLoadLibraryExWReturnAddress, 2);
+		MemoryUtils::PlaceHook(addrLoadLibraryExW, (uintptr_t)&HookLoadLibraryExW, &HookLoadLibraryExWReturnAddress);
 		CreateThread(0, 0, &HookThread, 0, 0, NULL);
 	}
 

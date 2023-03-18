@@ -7,6 +7,11 @@
 #include <Psapi.h>
 #include <sstream>
 #include <unordered_map>
+#include <iomanip>
+
+#define NMD_ASSEMBLY_IMPLEMENTATION
+#define NMD_ASSEMBLY_PRIVATE
+#include "nmd_assembly.h"
 
 #include "Logger.h"
 
@@ -300,6 +305,38 @@ namespace MemoryUtils
 		return memoryAddress;
 	}
 
+	static size_t CalculateRequiredAsmClearance(uintptr_t address, size_t minimumClearance)
+	{
+		size_t maximumAmountOfBytesToCheck = 30;
+		std::vector<uint8_t> bytesBuffer(maximumAmountOfBytesToCheck, 0x90);
+		MemCopy((uintptr_t)&bytesBuffer[0], address, maximumAmountOfBytesToCheck);
+
+		size_t requiredClearance = 0;
+		for (size_t byteCount = 0; byteCount < maximumAmountOfBytesToCheck;)
+		{
+			size_t instructionSize = nmd_x86_ldisasm(
+				&bytesBuffer[byteCount],
+				maximumAmountOfBytesToCheck - byteCount,
+				NMD_X86_MODE_64);
+
+			if (instructionSize <= 0)
+			{
+				logger.Log("Instruction invalid, could not check length!");
+				return minimumClearance;
+			}
+
+			if (byteCount >= minimumClearance)
+			{
+				requiredClearance = byteCount;
+				break;
+			}
+
+			byteCount += instructionSize;
+		}
+
+		return requiredClearance;
+	}
+
 	static uintptr_t CalculateAbsoluteDestinationFromRelativeNearJumpAtAddress(uintptr_t relativeNearJumpMemoryLocation)
 	{
 		int32_t offset = 0;
@@ -359,9 +396,8 @@ namespace MemoryUtils
 
 	// Places a 14-byte absolutely addressed jump from A to B. 
 	// Add extra clearance when the jump doesn't fit cleanly.
-	static void PlaceAbsoluteJump(uintptr_t address, uintptr_t destinationAddress, size_t extraClearance = 0)
+	static void PlaceAbsoluteJump(uintptr_t address, uintptr_t destinationAddress, size_t clearance = 14)
 	{
-		size_t clearance = 14 + extraClearance;
 		MemSet(address, 0x90, clearance);
 		unsigned char absoluteJumpBytes[6] = { 0xff, 0x25, 0x00, 0x00, 0x00, 0x00};
 		MemCopy(address, (uintptr_t)&absoluteJumpBytes[0], 6);
@@ -371,9 +407,8 @@ namespace MemoryUtils
 
 	// Places a 5-byte relatively addressed jump from A to B. 
 	// Add extra clearance when the jump doesn't fit cleanly.
-	static void PlaceRelativeJump(uintptr_t address, uintptr_t destinationAddress, size_t extraClearance = 0)
+	static void PlaceRelativeJump(uintptr_t address, uintptr_t destinationAddress, size_t clearance = 5)
 	{
-		size_t clearance = 5 + extraClearance;
 		MemSet(address, 0x90, clearance);
 		unsigned char relativeJumpBytes[5] = { 0xe9, 0x00, 0x00, 0x00, 0x00 };
 		MemCopy(address, (uintptr_t)&relativeJumpBytes[0], 5);
@@ -382,11 +417,34 @@ namespace MemoryUtils
 		logger.Log("Created relative jump from %p to %p with a clearance of %i", address, destinationAddress, clearance);
 	}
 
+	static std::string ConvertVectorOfBytesToStringOfHex(std::vector<uint8_t> bytes)
+	{
+		std::string hexString = "";
+		for (auto byte : bytes)
+		{
+			std::stringstream stream;
+			std::string byteAsHex = "";
+			stream << std::hex << std::setfill('0') << std::setw(2) << (int)byte;
+			byteAsHex = stream.str();
+			hexString.append("0x" + byteAsHex + " ");
+		}
+		return hexString;
+	}
+
+	static void PrintBytesAtAddress(uintptr_t address, size_t numBytes)
+	{
+		std::vector<uint8_t> bytesBuffer(numBytes, 0x90);
+		MemCopy((uintptr_t)&bytesBuffer[0], address, bytesBuffer.size());
+		std::string hexString = ConvertVectorOfBytesToStringOfHex(bytesBuffer);
+		logger.Log("Existing bytes: %s", hexString.c_str());
+	}
+
 	// Place a trampoline hook from A to B while taking third-party hooks into consideration.
 	// Add extra clearance when the jump doesn't fit cleanly.
-	static void PlaceHook(uintptr_t addressToHook, uintptr_t destinationAddress, uintptr_t* returnAddress, size_t extraClearance = 0)
+	static void PlaceHook(uintptr_t addressToHook, uintptr_t destinationAddress, uintptr_t* returnAddress)
 	{
 		logger.Log("Hooking...");
+		PrintBytesAtAddress(addressToHook, 20);
 
 		bool isThirdPartyHookPresent = IsAddressHooked(addressToHook);
 		uintptr_t thirdPartyHookDestination = 0;
@@ -409,33 +467,35 @@ namespace MemoryUtils
 		size_t trampolineSize = 0;
 		uintptr_t trampolineAddress = 0;
 		uintptr_t trampolineReturnAddress = 0;
-		size_t hookingProtectionBuffer = 5;
+		size_t thirdPartyHookProtectionBuffer = assemblyFarJumpSize;
 
-		trampolineSize = assemblyFarJumpSize * 3 + extraClearance + hookingProtectionBuffer;
+		size_t clearance = CalculateRequiredAsmClearance(addressToHook, assemblyShortJumpSize);
+
+		trampolineSize = assemblyFarJumpSize * 3 + clearance + thirdPartyHookProtectionBuffer;
 		trampolineAddress = AllocateMemoryWithin32BitRange(trampolineSize, addressToHook + assemblyShortJumpSize);
-		trampolineReturnAddress = addressToHook + assemblyShortJumpSize + extraClearance;
-		MemCopy(trampolineAddress + assemblyFarJumpSize + hookingProtectionBuffer, addressToHook, assemblyShortJumpSize + extraClearance);
+		trampolineReturnAddress = addressToHook + clearance;
+		MemCopy(trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer, addressToHook, clearance);
 
 		HookInformation hookInfo;
-		hookInfo.originalBytes = std::vector<unsigned char>(assemblyShortJumpSize + extraClearance);
-		hookInfo.trampolineInstructionsAddress = trampolineAddress + assemblyFarJumpSize + hookingProtectionBuffer;
+		hookInfo.originalBytes = std::vector<unsigned char>(clearance);
+		hookInfo.trampolineInstructionsAddress = trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer;
 		InfoBufferForHookedAddresses[addressToHook] = hookInfo;
 		MemCopy(
 			(uintptr_t)&InfoBufferForHookedAddresses[addressToHook].originalBytes[0],
-			trampolineAddress + assemblyFarJumpSize + hookingProtectionBuffer,
+			trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer,
 			InfoBufferForHookedAddresses[addressToHook].originalBytes.size());
 
 		if (isThirdPartyHookPresent)
 		{
-			PlaceAbsoluteJump(trampolineAddress + assemblyFarJumpSize + hookingProtectionBuffer, thirdPartyHookDestination);
+			PlaceAbsoluteJump(trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer, thirdPartyHookDestination);
 		}
 	
-		PlaceAbsoluteJump(trampolineAddress + hookingProtectionBuffer, destinationAddress);
+		PlaceAbsoluteJump(trampolineAddress + thirdPartyHookProtectionBuffer, destinationAddress);
 		PlaceAbsoluteJump(trampolineAddress + trampolineSize - assemblyFarJumpSize, trampolineReturnAddress);
 
-		*returnAddress = trampolineAddress + assemblyFarJumpSize + hookingProtectionBuffer;
+		*returnAddress = trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer;
 
-		PlaceRelativeJump(addressToHook, trampolineAddress, extraClearance);
+		PlaceRelativeJump(addressToHook, trampolineAddress, clearance);
 	}
 
 	static void Unhook(uintptr_t hookedAddress) 

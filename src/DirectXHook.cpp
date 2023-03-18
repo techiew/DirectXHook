@@ -199,20 +199,7 @@ void DirectXHook::HookSwapChain(
 	MemoryUtils::ToggleMemoryProtection(true, vmtResizeBuffersIndex, numBytes);
 
 	MemoryUtils::PlaceHook(presentAddress, presentDetourFunction, presentReturnAddress);
-
-	// TEMP FIX: Check if reshade is screwing us over
-	size_t extraClearance = 1;
-	if (!MemoryUtils::IsAddressHooked(resizeBuffersAddress))
-	{
-		std::vector<unsigned char> buffer(6, 0x90);
-		std::vector<unsigned char> expectedBytes = { 0x48, 0x8B, 0xC4, 0x55, 0x41, 0x54 };
-		MemoryUtils::MemCopy((uintptr_t)&buffer[0], resizeBuffersAddress, expectedBytes.size());
-		if (buffer != expectedBytes)
-		{
-			extraClearance = 0;
-		}
-	}
-	MemoryUtils::PlaceHook(resizeBuffersAddress, resizeBuffersDetourFunction, resizeBuffersReturnAddress, extraClearance);
+	MemoryUtils::PlaceHook(resizeBuffersAddress, resizeBuffersDetourFunction, resizeBuffersReturnAddress);
 
 	dummySwapChain->Release();
 }
@@ -243,18 +230,7 @@ void DirectXHook::HookCommandQueue(
 		logger.Log("Hook already present in ExecuteCommandLists");
 	}
 
-	// TEMP FIX: Check if reshade is screwing us over
-	size_t extraClearance = 0;
-	if (!MemoryUtils::IsAddressHooked(executeCommandListsAddress)) {
-		std::vector<unsigned char> buffer(5, 0x90);
-		std::vector<unsigned char> expectedBytes = { 0x48, 0x89, 0x5C, 0x24, 0x08 };
-		MemoryUtils::MemCopy((uintptr_t)&buffer[0], executeCommandListsAddress, expectedBytes.size());
-		if (buffer != expectedBytes)
-		{
-			extraClearance = 2;
-		}
-	}
-	MemoryUtils::PlaceHook(executeCommandListsAddress, executeCommandListsDetourFunction, executeCommandListsReturnAddress, extraClearance);
+	MemoryUtils::PlaceHook(executeCommandListsAddress, executeCommandListsDetourFunction, executeCommandListsReturnAddress);
 	dummyCommandQueue->Release();
 }
 
