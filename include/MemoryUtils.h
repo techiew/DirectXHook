@@ -383,6 +383,18 @@ namespace MemoryUtils
 		return false;
 	}
 
+	static bool IsAbsoluteDirectFarJumpPresentAtAddress(uintptr_t address)
+	{
+		std::vector<unsigned char> absoluteDirectFarJump = { 0xff, 0x25, 0x00, 0x00, 0x00, 0x00 };
+		std::vector<unsigned char> buffer(absoluteDirectFarJump.size(), 0x90);
+		MemCopy((uintptr_t)&buffer[0], address, buffer.size());
+		if (buffer == absoluteDirectFarJump)
+		{
+			return true;
+		}
+		return false;
+	}
+
 	static bool IsAddressHooked(uintptr_t address)
 	{
 		if(
@@ -444,23 +456,30 @@ namespace MemoryUtils
 	static void PlaceHook(uintptr_t addressToHook, uintptr_t destinationAddress, uintptr_t* returnAddress)
 	{
 		logger.Log("Hooking...");
-		PrintBytesAtAddress(addressToHook, 20);
 
-		bool isThirdPartyHookPresent = IsAddressHooked(addressToHook);
-		uintptr_t thirdPartyHookDestination = 0;
-		if (isThirdPartyHookPresent)
+		// Most overlays don't care if we overwrite the 0xE9 jump and place it somewhere else, but MSI Afterburner does.
+		// So instead of overwriting jumps we follow them and place our jump at the final destination.
+		int maxFollowAttempts = 50;
+		int countFollowAttempts = 0;
+		while (IsAddressHooked(addressToHook))
 		{
-			logger.Log("Third-party hook detected");
 			if (IsRelativeNearJumpPresentAtAddress(addressToHook))
 			{
-				thirdPartyHookDestination = CalculateAbsoluteDestinationFromRelativeNearJumpAtAddress(addressToHook);
+				addressToHook = CalculateAbsoluteDestinationFromRelativeNearJumpAtAddress(addressToHook);
 			}
 			else if (IsAbsoluteIndirectNearJumpPresentAtAddress(addressToHook))
 			{
-				thirdPartyHookDestination = CalculateAbsoluteDestinationFromAbsoluteIndirectNearJumpAtAddress(addressToHook);
+				addressToHook = CalculateAbsoluteDestinationFromAbsoluteIndirectNearJumpAtAddress(addressToHook);
 			}
-			logger.Log("Third-party hook destination: %p", thirdPartyHookDestination);
+
+			countFollowAttempts++;
+			if (countFollowAttempts >= maxFollowAttempts)
+			{
+				break;
+			}
 		}
+
+		PrintBytesAtAddress(addressToHook, 20);
 
 		const size_t assemblyShortJumpSize = 5;
 		const size_t assemblyFarJumpSize = 14;
@@ -469,7 +488,16 @@ namespace MemoryUtils
 		uintptr_t trampolineReturnAddress = 0;
 		size_t thirdPartyHookProtectionBuffer = assemblyFarJumpSize;
 
-		size_t clearance = CalculateRequiredAsmClearance(addressToHook, assemblyShortJumpSize);
+		size_t clearance = 0;
+		if (IsAbsoluteDirectFarJumpPresentAtAddress(addressToHook))
+		{
+			// Hack since the disassembler library doesn't decode 0xff 0x25 correctly
+			clearance = 14;
+		}
+		else
+		{
+			clearance = CalculateRequiredAsmClearance(addressToHook, assemblyShortJumpSize);
+		}
 
 		trampolineSize = assemblyFarJumpSize * 3 + clearance + thirdPartyHookProtectionBuffer;
 		trampolineAddress = AllocateMemoryWithin32BitRange(trampolineSize, addressToHook + assemblyShortJumpSize);
@@ -484,17 +512,11 @@ namespace MemoryUtils
 			(uintptr_t)&InfoBufferForHookedAddresses[addressToHook].originalBytes[0],
 			trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer,
 			InfoBufferForHookedAddresses[addressToHook].originalBytes.size());
-
-		if (isThirdPartyHookPresent)
-		{
-			PlaceAbsoluteJump(trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer, thirdPartyHookDestination);
-		}
 	
 		PlaceAbsoluteJump(trampolineAddress + thirdPartyHookProtectionBuffer, destinationAddress);
 		PlaceAbsoluteJump(trampolineAddress + trampolineSize - assemblyFarJumpSize, trampolineReturnAddress);
 
 		*returnAddress = trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer;
-
 		PlaceRelativeJump(addressToHook, trampolineAddress, clearance);
 	}
 

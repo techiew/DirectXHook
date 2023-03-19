@@ -4,87 +4,9 @@
 #include "Logger.h"
 #include "MemoryUtils.h"
 #include "Example/Example.h"
-#include <locale>
-#include <codecvt>
 
 FARPROC forwardExports[6];
 static Logger logger{ "DllMain" };
-
-typedef HMODULE(__stdcall* LoadLibraryA_T)(LPCSTR lpLibFileName);
-typedef HMODULE(__stdcall* LoadLibraryW_T)(LPCWSTR lpLibFileName);
-typedef HMODULE(__stdcall* LoadLibraryExA_T)(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
-typedef HMODULE(__stdcall* LoadLibraryExW_T)(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
-
-uintptr_t HookLoadLibraryAReturnAddress = 0;
-uintptr_t HookLoadLibraryWReturnAddress = 0;
-uintptr_t HookLoadLibraryExAReturnAddress = 0;
-uintptr_t HookLoadLibraryExWReturnAddress = 0;
-
-std::vector<std::string> blacklistedLibraries = {
-	"RTSSHooks64.dll",
-	"RTSSHooks.dll"
-};
-
-std::string GetLibraryNameWithoutPath(std::string libraryName)
-{
-	std::size_t search = libraryName.find_last_of("\\");
-	if (search != std::string::npos)
-	{
-		return libraryName.substr(search + 1);
-	}
-	return libraryName;
-}
-
-bool IsLibraryBlacklisted(std::string libraryName)
-{
-	if (std::find(blacklistedLibraries.begin(), blacklistedLibraries.end(), libraryName) != blacklistedLibraries.end())
-	{
-		return true;
-	}
-	return false;
-}
-
-HMODULE __stdcall HookLoadLibraryA(LPCSTR lpLibFileName)
-{
-	if (IsLibraryBlacklisted(GetLibraryNameWithoutPath(lpLibFileName)))
-	{
-		SetLastError(ERROR_ACCESS_DISABLED_BY_POLICY);
-		return NULL;
-	}
-	return ((LoadLibraryA_T)HookLoadLibraryAReturnAddress)(lpLibFileName);
-}
-
-HMODULE __stdcall HookLoadLibraryW(LPCWSTR lpLibFileName)
-{
-	std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> wideStringConverter;
-	if (IsLibraryBlacklisted(GetLibraryNameWithoutPath(wideStringConverter.to_bytes(lpLibFileName))))
-	{
-		SetLastError(ERROR_ACCESS_DISABLED_BY_POLICY);
-		return NULL;
-	}
-	return ((LoadLibraryW_T)HookLoadLibraryWReturnAddress)(lpLibFileName);
-}
-
-HMODULE __stdcall HookLoadLibraryExA(LPCSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
-{
-	if (IsLibraryBlacklisted(GetLibraryNameWithoutPath(lpLibFileName)))
-	{
-		SetLastError(ERROR_ACCESS_DISABLED_BY_POLICY);
-		return NULL;
-	}
-	return ((LoadLibraryExA_T)HookLoadLibraryExAReturnAddress)(lpLibFileName, hFile, dwFlags);
-}
-
-HMODULE __stdcall HookLoadLibraryExW(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
-{
-	std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> wideStringConverter;
-	if (IsLibraryBlacklisted(GetLibraryNameWithoutPath(wideStringConverter.to_bytes(lpLibFileName))))
-	{
-		SetLastError(ERROR_ACCESS_DISABLED_BY_POLICY);
-		return NULL;
-	}
-	return ((LoadLibraryExW_T)HookLoadLibraryExWReturnAddress)(lpLibFileName, hFile, dwFlags);
-}
 
 HMODULE LoadDllFromSystemFolder(std::string dllName)
 {
@@ -200,24 +122,6 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 	if (reason == DLL_PROCESS_ATTACH)
 	{
 		OpenDebugTerminal();
-		HMODULE kernelBaseHandle = GetModuleHandleA("KERNELBASE.dll");
-		if (kernelBaseHandle == NULL)
-		{
-			return 0;
-		}
-		uintptr_t addrLoadLibraryA = (uintptr_t)GetProcAddress(kernelBaseHandle, "LoadLibraryA");
-		uintptr_t addrLoadLibraryW = (uintptr_t)GetProcAddress(kernelBaseHandle, "LoadLibraryW");
-		uintptr_t addrLoadLibraryExA = (uintptr_t)GetProcAddress(kernelBaseHandle, "LoadLibraryExA");
-		uintptr_t addrLoadLibraryExW = (uintptr_t)GetProcAddress(kernelBaseHandle, "LoadLibraryExW");
-
-		logger.Log("LoadLibraryA: %p", addrLoadLibraryA);
-		logger.Log("LoadLibraryW: %p", addrLoadLibraryW);
-		logger.Log("LoadLibraryExA: %p", addrLoadLibraryExA);
-		logger.Log("LoadLibraryExW: %p", addrLoadLibraryExW);
-		MemoryUtils::PlaceHook(addrLoadLibraryA, (uintptr_t)&HookLoadLibraryA, &HookLoadLibraryAReturnAddress);
-		MemoryUtils::PlaceHook(addrLoadLibraryW, (uintptr_t)&HookLoadLibraryW, &HookLoadLibraryWReturnAddress);
-		MemoryUtils::PlaceHook(addrLoadLibraryExA, (uintptr_t)&HookLoadLibraryExA, &HookLoadLibraryExAReturnAddress);
-		MemoryUtils::PlaceHook(addrLoadLibraryExW, (uintptr_t)&HookLoadLibraryExW, &HookLoadLibraryExWReturnAddress);
 		CreateThread(0, 0, &HookThread, 0, 0, NULL);
 	}
 
