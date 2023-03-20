@@ -105,27 +105,20 @@ IDXGISwapChain* DirectXHook::CreateDummySwapChain()
 	desc.Windowed = TRUE;
 	desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-	D3D_FEATURE_LEVEL featureLevel[] =
+	D3D_FEATURE_LEVEL featureLevels[] =
 	{
-		D3D_FEATURE_LEVEL_9_1,
-		D3D_FEATURE_LEVEL_9_2,
-		D3D_FEATURE_LEVEL_9_3,
-		D3D_FEATURE_LEVEL_10_0,
-		D3D_FEATURE_LEVEL_10_1,
 		D3D_FEATURE_LEVEL_11_0,
-		D3D_FEATURE_LEVEL_11_1,
-		D3D_FEATURE_LEVEL_12_0,
-		D3D_FEATURE_LEVEL_12_1
+		D3D_FEATURE_LEVEL_11_1
 	};
 
-	ID3D11Device* dummyDevice;
-	IDXGISwapChain* dummySwapChain;
+	ID3D11Device* dummyDevice = nullptr;
+	IDXGISwapChain* dummySwapChain = nullptr;
 	HRESULT result = D3D11CreateDeviceAndSwapChain(
-		nullptr, 
-		D3D_DRIVER_TYPE_HARDWARE, 
 		NULL, 
+		D3D_DRIVER_TYPE_HARDWARE,
 		NULL, 
-		featureLevel, 
+		0, 
+		featureLevels, 
 		1,
 		D3D11_SDK_VERSION,
 		&desc, 
@@ -136,19 +129,92 @@ IDXGISwapChain* DirectXHook::CreateDummySwapChain()
 
 	DestroyWindow(desc.OutputWindow);
 	UnregisterClass(wc.lpszClassName, GetModuleHandle(nullptr));
-	dummyDevice->Release();
+	//dummySwapChain->Release();
+	//dummyDevice->Release();
 
 	if (FAILED(result))
 	{
 		_com_error error(result);
 		logger.Log("D3D11CreateDeviceAndSwapChain failed: %s", error.ErrorMessage());
-		dummySwapChain->Release();
 		return nullptr;
 	}
 
 	logger.Log("D3D11CreateDeviceAndSwapChain succeeded");
 	return dummySwapChain;
 }
+
+//IDXGISwapChain* DirectXHook::CreateDummySwapChain(ID3D11Device* dummyDevice)
+//{
+//	IDXGIDevice2* pDXGIDevice;
+//	CheckSuccess(dummyDevice->QueryInterface(__uuidof(IDXGIDevice2), (void**)&pDXGIDevice));
+//
+//	IDXGIAdapter* pDXGIAdapter;
+//	CheckSuccess(pDXGIDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&pDXGIAdapter));
+//
+//	WNDCLASSEX wc { 0 };
+//	wc.cbSize = sizeof(wc);
+//	wc.lpfnWndProc = DefWindowProc;
+//	wc.lpszClassName = TEXT("dummy class");
+//	RegisterClassExA(&wc);
+//	HWND hwnd = CreateWindow(wc.lpszClassName, TEXT(""), WS_DISABLED, 0, 0, 0, 0, NULL, NULL, NULL, nullptr);
+//
+//	DXGI_SWAP_CHAIN_DESC1 desc{ 0 };
+//	desc.Width = 1;
+//	desc.Height = 1;
+//	desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+//	desc.Stereo = FALSE;
+//	desc.SampleDesc = { 1, 0 };
+//	desc.BufferUsage = DXGI_USAGE_BACK_BUFFER;
+//	desc.BufferCount = 2;
+//	desc.Scaling = DXGI_SCALING_STRETCH;
+//	desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+//	desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+//	desc.Flags = DXGI_SWAP_CHAIN_FLAG_DISPLAY_ONLY;
+//
+//	IDXGIFactory2* pIDXGIFactory = nullptr;
+//	CheckSuccess(pDXGIAdapter->GetParent(__uuidof(IDXGIFactory2), (void**)&pIDXGIFactory));
+//
+//	IDXGISwapChain* dummySwapChain = nullptr;
+//	IDXGISwapChain1* dummySwapChain1 = nullptr;
+//	CheckSuccess(pIDXGIFactory->CreateSwapChainForHwnd(
+//		dummyDevice,
+//		hwnd,
+//		&desc,
+//		NULL,
+//		NULL,
+//		&dummySwapChain1));
+//
+//	DestroyWindow(hwnd);
+//	UnregisterClass(wc.lpszClassName, GetModuleHandle(nullptr));
+//
+//	CheckSuccess(dummySwapChain1->QueryInterface(__uuidof(IDXGISwapChain), (void**)&dummySwapChain));
+//	//dummySwapChain1->Release();
+//	return dummySwapChain;
+//}
+
+//ID3D11Device* DirectXHook::CreateDummyD3D11Device()
+//{
+//	D3D_FEATURE_LEVEL featureLevels[] =
+//	{
+//		D3D_FEATURE_LEVEL_11_0,
+//		D3D_FEATURE_LEVEL_11_1
+//	};
+//
+//	ID3D11Device* dummyDevice = nullptr;
+//	CheckSuccess(D3D11CreateDevice(
+//		NULL,
+//		D3D_DRIVER_TYPE_HARDWARE,
+//		NULL,
+//		0,
+//		featureLevels,
+//		2,
+//		D3D11_SDK_VERSION,
+//		&dummyDevice,
+//		NULL,
+//		NULL));
+//
+//	return dummyDevice;
+//}
 
 ID3D12CommandQueue* DirectXHook::CreateDummyCommandQueue()
 {

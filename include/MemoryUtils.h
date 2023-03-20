@@ -305,11 +305,64 @@ namespace MemoryUtils
 		return memoryAddress;
 	}
 
+	static bool IsRelativeNearJumpPresentAtAddress(uintptr_t address)
+	{
+		std::vector<unsigned char> buffer(1, 0x90);
+		std::vector<unsigned char> assemblyRelativeNearJumpByte = { 0xe9 };
+		MemCopy((uintptr_t)&buffer[0], address, 1);
+		if (buffer == assemblyRelativeNearJumpByte)
+		{
+			return true;
+		};
+		return false;
+	}
+
+	static bool IsAbsoluteIndirectNearJumpPresentAtAddress(uintptr_t address)
+	{
+		std::vector<unsigned char> buffer(3, 0x90);
+		std::vector<unsigned char> absoluteIndirectNearJumpBytes = { 0x48, 0xff, 0x25 };
+		MemCopy((uintptr_t)&buffer[0], address, 3);
+		if (buffer == absoluteIndirectNearJumpBytes)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	static bool IsAbsoluteDirectFarJumpPresentAtAddress(uintptr_t address)
+	{
+		std::vector<unsigned char> absoluteDirectFarJump = { 0xff, 0x25, 0x00, 0x00, 0x00, 0x00 };
+		std::vector<unsigned char> buffer(absoluteDirectFarJump.size(), 0x90);
+		MemCopy((uintptr_t)&buffer[0], address, buffer.size());
+		if (buffer == absoluteDirectFarJump)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	static bool IsAddressHooked(uintptr_t address)
+	{
+		if (
+			IsRelativeNearJumpPresentAtAddress(address)
+			|| IsAbsoluteIndirectNearJumpPresentAtAddress(address)
+			|| IsAbsoluteDirectFarJumpPresentAtAddress(address))
+		{
+			return true;
+		}
+		return false;
+	}
+
 	static size_t CalculateRequiredAsmClearance(uintptr_t address, size_t minimumClearance)
 	{
 		size_t maximumAmountOfBytesToCheck = 30;
 		std::vector<uint8_t> bytesBuffer(maximumAmountOfBytesToCheck, 0x90);
 		MemCopy((uintptr_t)&bytesBuffer[0], address, maximumAmountOfBytesToCheck);
+
+		if (IsAbsoluteDirectFarJumpPresentAtAddress(address))
+		{
+			return 14;
+		}
 
 		size_t requiredClearance = 0;
 		for (size_t byteCount = 0; byteCount < maximumAmountOfBytesToCheck;)
@@ -354,56 +407,16 @@ namespace MemoryUtils
 		return absoluteAddress;
 	}
 
+	static uintptr_t CalculateAbsoluteDestinationFromAbsoluteDirectFarJumpAtAddress(uintptr_t absoluteDirectFarJumpMemoryLocation)
+	{
+		uintptr_t absoluteAddress = 0;
+		MemCopy((uintptr_t)&absoluteAddress, absoluteDirectFarJumpMemoryLocation + 6, 8);
+		return absoluteAddress;
+	}
+
 	static int32_t CalculateRelativeDisplacementForRelativeJump(uintptr_t relativeJumpAddress, uintptr_t destinationAddress)
 	{
 		return -int32_t(relativeJumpAddress + 5 - destinationAddress);
-	}
-
-	static bool IsRelativeNearJumpPresentAtAddress(uintptr_t address)
-	{
-		std::vector<unsigned char> buffer(1, 0x90);
-		std::vector<unsigned char> assemblyRelativeNearJumpByte = { 0xe9 };
-		MemCopy((uintptr_t)&buffer[0], address, 1);
-		if (buffer == assemblyRelativeNearJumpByte)
-		{
-			return true;
-		};
-		return false;
-	}
-
-	static bool IsAbsoluteIndirectNearJumpPresentAtAddress(uintptr_t address)
-	{
-		std::vector<unsigned char> buffer(3, 0x90);
-		std::vector<unsigned char> absoluteIndirectNearJumpBytes = { 0x48, 0xff, 0x25 };
-		MemCopy((uintptr_t)&buffer[0], address, 3);
-		if (buffer == absoluteIndirectNearJumpBytes)
-		{
-			return true;
-		}
-		return false;
-	}
-
-	static bool IsAbsoluteDirectFarJumpPresentAtAddress(uintptr_t address)
-	{
-		std::vector<unsigned char> absoluteDirectFarJump = { 0xff, 0x25, 0x00, 0x00, 0x00, 0x00 };
-		std::vector<unsigned char> buffer(absoluteDirectFarJump.size(), 0x90);
-		MemCopy((uintptr_t)&buffer[0], address, buffer.size());
-		if (buffer == absoluteDirectFarJump)
-		{
-			return true;
-		}
-		return false;
-	}
-
-	static bool IsAddressHooked(uintptr_t address)
-	{
-		if(
-			IsRelativeNearJumpPresentAtAddress(address)
-			|| IsAbsoluteIndirectNearJumpPresentAtAddress(address)) 
-		{
-			return true;
-		}
-		return false;
 	}
 
 	// Places a 14-byte absolutely addressed jump from A to B. 
@@ -471,6 +484,10 @@ namespace MemoryUtils
 			{
 				addressToHook = CalculateAbsoluteDestinationFromAbsoluteIndirectNearJumpAtAddress(addressToHook);
 			}
+			else if (IsAbsoluteDirectFarJumpPresentAtAddress(addressToHook))
+			{
+				//addressToHook = CalculateAbsoluteDestinationFromAbsoluteDirectFarJumpAtAddress(addressToHook);
+			}
 
 			countFollowAttempts++;
 			if (countFollowAttempts >= maxFollowAttempts)
@@ -488,16 +505,7 @@ namespace MemoryUtils
 		uintptr_t trampolineReturnAddress = 0;
 		size_t thirdPartyHookProtectionBuffer = assemblyFarJumpSize;
 
-		size_t clearance = 0;
-		if (IsAbsoluteDirectFarJumpPresentAtAddress(addressToHook))
-		{
-			// Hack since the disassembler library doesn't decode 0xff 0x25 correctly
-			clearance = 14;
-		}
-		else
-		{
-			clearance = CalculateRequiredAsmClearance(addressToHook, assemblyShortJumpSize);
-		}
+		size_t clearance = CalculateRequiredAsmClearance(addressToHook, assemblyShortJumpSize);
 
 		trampolineSize = assemblyFarJumpSize * 3 + clearance + thirdPartyHookProtectionBuffer;
 		trampolineAddress = AllocateMemoryWithin32BitRange(trampolineSize, addressToHook + assemblyShortJumpSize);
