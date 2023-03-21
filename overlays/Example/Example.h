@@ -11,4 +11,5 @@ public:
 
 private:
 	OF::Box* box;
+	float transformationPercentage = 0;
 };
