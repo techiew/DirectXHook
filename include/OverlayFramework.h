@@ -25,16 +25,9 @@ namespace OF
 		float z = 0.0f;
 		int width = 0;
 		int height = 0;
-<<<<<<< HEAD:include/OverlayFramework.h
 		bool pressed = false;
 		bool clicked = false;
 		bool hover = false;
-=======
-		float rotationDegrees = 0.0f;
-		bool pressed = false; // Whether the box is currently being pressed (left mouse button held down)
-		bool clicked = false; // Whether the box has been clicked this frame (left mouse button pressed and then released)
-		bool hover = false; // Whether the cursor is currently hovering over this box
->>>>>>> temp-box-rotation:DirectXHook/OverlayFramework.h
 		bool draggable = true;
 		bool hasBeenRendered = false;
 		Box* parentBox = nullptr;
@@ -45,35 +38,25 @@ namespace OF
 	static int ofWindowWidth = 0;
 	static int ofWindowHeight = 0;
 	static std::vector<Box*> ofBoxes = std::vector<Box*>();
-<<<<<<< HEAD:include/OverlayFramework.h
-	static constexpr unsigned char UNBOUND = 0x07;
-	
-	static Microsoft::WRL::ComPtr<ID3D11Device> ofDevice = nullptr;
-=======
 	static std::vector<int> ofBoxOrder = std::vector<int>();
 	static int ofMouseX = 0, ofMouseY = 0;
 	static int ofDeltaMouseX = 0, ofDeltaMouseY = 0;
 	static bool ofMousePressed = false;
 	static Box* ofClickedBox = nullptr;
-	constexpr unsigned char HK_NONE = 0x07;
+	constexpr unsigned char UNBOUND = 0x07;
 	const double PI = 3.141592653589793238463;
 
 	static ID3D11Device* ofDevice = nullptr;
->>>>>>> temp-box-rotation:DirectXHook/OverlayFramework.h
 	static std::shared_ptr<DirectX::SpriteBatch> ofSpriteBatch = nullptr;
 	static std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> ofTextures = std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>>();
 	static std::vector<std::shared_ptr<DirectX::SpriteFont>> ofFonts = std::vector<std::shared_ptr<DirectX::SpriteFont>>();
 	static std::shared_ptr<DirectX::SpriteFont> ofActiveFont = nullptr;
 
 	// Gives the framework the required DirectX objects to draw
-<<<<<<< HEAD:include/OverlayFramework.h
 	static void InitFramework(
 		Microsoft::WRL::ComPtr<ID3D11Device> device,
 		std::shared_ptr<DirectX::SpriteBatch> spriteBatch,
 		HWND window)
-=======
-	static void InitFramework(Microsoft::WRL::ComPtr<ID3D11Device> device, std::shared_ptr<DirectX::SpriteBatch> spriteBatch, HWND window)
->>>>>>> temp-box-rotation:DirectXHook/OverlayFramework.h
 	{
 		logger.Log("Initialized");
 		ofDevice = device;
@@ -86,30 +69,22 @@ namespace OF
 		ofWindowHeight = hwndRect.bottom - hwndRect.top;
 	}
 
-<<<<<<< HEAD:include/OverlayFramework.h
 	static int MapIntToRange(
 		int number,
 		int inputStart,
 		int inputEnd,
 		int outputStart,
 		int outputEnd)
-=======
-	static int MapIntToRange(int number, int inputStart, int inputEnd, int outputStart, int outputEnd)
->>>>>>> temp-box-rotation:DirectXHook/OverlayFramework.h
 	{
 		return outputStart + (outputEnd - outputStart) * (number - inputStart) / (inputEnd - inputStart);
 	}
 
-<<<<<<< HEAD:include/OverlayFramework.h
 	static float MapFloatToRange(
 		float number,
 		float inputStart,
 		float inputEnd,
 		float outputStart,
 		float outputEnd)
-=======
-	static float MapFloatToRange(float number, float inputStart, float inputEnd, float outputStart, float outputEnd)
->>>>>>> temp-box-rotation:DirectXHook/OverlayFramework.h
 	{
 		return outputStart + (outputEnd - outputStart) * (number - inputStart) / (inputEnd - inputStart);
 	}
@@ -210,11 +185,7 @@ namespace OF
 		ofActiveFont = ofFonts[font];
 	}
 
-<<<<<<< HEAD:include/OverlayFramework.h
 	static void PlaceOnTop(Box* box)
-=======
-	static void PlaceOnTop(Box* boxOnTop)
->>>>>>> temp-box-rotation:DirectXHook/OverlayFramework.h
 	{
 		static std::vector<int> ofBoxOrder = std::vector<int>();
 		size_t boxIndex = 0;
@@ -344,13 +315,8 @@ namespace OF
 
 		float rotation = MapFloatToRange(box->rotationDegrees, 0.0f, 360.0f, 0.0f, 2 * PI);
 
-<<<<<<< HEAD:include/OverlayFramework.h
 		box->hasBeenRendered = true;
 		ofSpriteBatch->Draw(ofTextures[textureID].Get(), rect, nullptr, color, 0.0f, DirectX::XMFLOAT2(0.0f, 0.0f), DirectX::SpriteEffects_None, box->z);
-=======
-		box->visible = true;
-		ofSpriteBatch->Draw(ofTextures[textureID].Get(), rect, nullptr, color, rotation, DirectX::XMFLOAT2(0.5f, 0.5f), DirectX::SpriteEffects_None, box->z);
->>>>>>> temp-box-rotation:DirectXHook/OverlayFramework.h
 	}
 
 	static void DrawBox(Box* box, int textureID)
@@ -367,7 +333,6 @@ namespace OF
 		_DrawBox(box, { _r, _g, _b, _a }, 0);
 	}
 
-<<<<<<< HEAD:include/OverlayFramework.h
 	static void DrawText(
 		Box* box, 
 		std::string text,
@@ -379,10 +344,6 @@ namespace OF
 		int b = 255,
 		int a = 255,
 		float rotation = 0.0f)
-=======
-	static void DrawText(Box* box, std::string text, int offsetX = 0, int offsetY = 0, float scale = 1.0f,
-		int r = 255, int g = 255, int b = 255, int a = 255, float rotation = 0.0f)
->>>>>>> temp-box-rotation:DirectXHook/OverlayFramework.h
 	{
 		if (ofActiveFont == nullptr)
 		{
@@ -431,11 +392,7 @@ namespace OF
 		return false;
 	}
 
-<<<<<<< HEAD:include/OverlayFramework.h
 	static bool CheckHotkey(unsigned char key, unsigned char modifier = UNBOUND)
-=======
-	static bool CheckHotkey(unsigned char key, unsigned char modifier = HK_NONE)
->>>>>>> temp-box-rotation:DirectXHook/OverlayFramework.h
 	{
 		static std::vector<unsigned char> notReleasedKeys;
 
