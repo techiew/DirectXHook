@@ -178,7 +178,9 @@
       <AdditionalDependencies>d3d11.lib;d3d12.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>COPY "C:\Programming\Github repositories\DirectXHook\x64\Release\dinput8.dll" "G:\SteamLibrary\steamapps\common\MonsterHunterRise\reframework\plugins\RiseDpsMeter.dll"</Command>
+      <Command>COPY "C:\Programming\Github repositories\DirectXHook\x64\Release\dinput8.dll" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\dinput8.dll"
+XCOPY /y "C:\Programming\Github repositories\DirectXHook\assets\hook_textures" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\hook_textures\"
+XCOPY /y "C:\Programming\Github repositories\DirectXHook\assets\hook_fonts" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\hook_fonts\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

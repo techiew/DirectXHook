@@ -305,11 +305,64 @@ namespace MemoryUtils
 		return memoryAddress;
 	}
 
+	static bool IsRelativeNearJumpPresentAtAddress(uintptr_t address)
+	{
+		std::vector<unsigned char> buffer(1, 0x90);
+		std::vector<unsigned char> assemblyRelativeNearJumpByte = { 0xe9 };
+		MemCopy((uintptr_t)&buffer[0], address, 1);
+		if (buffer == assemblyRelativeNearJumpByte)
+		{
+			return true;
+		};
+		return false;
+	}
+
+	static bool IsAbsoluteIndirectNearJumpPresentAtAddress(uintptr_t address)
+	{
+		std::vector<unsigned char> buffer(3, 0x90);
+		std::vector<unsigned char> absoluteIndirectNearJumpBytes = { 0x48, 0xff, 0x25 };
+		MemCopy((uintptr_t)&buffer[0], address, 3);
+		if (buffer == absoluteIndirectNearJumpBytes)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	static bool IsAbsoluteDirectFarJumpPresentAtAddress(uintptr_t address)
+	{
+		std::vector<unsigned char> absoluteDirectFarJump = { 0xff, 0x25, 0x00, 0x00, 0x00, 0x00 };
+		std::vector<unsigned char> buffer(absoluteDirectFarJump.size(), 0x90);
+		MemCopy((uintptr_t)&buffer[0], address, buffer.size());
+		if (buffer == absoluteDirectFarJump)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	static bool IsAddressHooked(uintptr_t address)
+	{
+		if (
+			IsRelativeNearJumpPresentAtAddress(address)
+			|| IsAbsoluteIndirectNearJumpPresentAtAddress(address)
+			|| IsAbsoluteDirectFarJumpPresentAtAddress(address))
+		{
+			return true;
+		}
+		return false;
+	}
+
 	static size_t CalculateRequiredAsmClearance(uintptr_t address, size_t minimumClearance)
 	{
 		size_t maximumAmountOfBytesToCheck = 30;
 		std::vector<uint8_t> bytesBuffer(maximumAmountOfBytesToCheck, 0x90);
 		MemCopy((uintptr_t)&bytesBuffer[0], address, maximumAmountOfBytesToCheck);
+
+		if (IsAbsoluteDirectFarJumpPresentAtAddress(address))
+		{
+			return 14;
+		}
 
 		size_t requiredClearance = 0;
 		for (size_t byteCount = 0; byteCount < maximumAmountOfBytesToCheck;)
@@ -354,44 +407,16 @@ namespace MemoryUtils
 		return absoluteAddress;
 	}
 
+	static uintptr_t CalculateAbsoluteDestinationFromAbsoluteDirectFarJumpAtAddress(uintptr_t absoluteDirectFarJumpMemoryLocation)
+	{
+		uintptr_t absoluteAddress = 0;
+		MemCopy((uintptr_t)&absoluteAddress, absoluteDirectFarJumpMemoryLocation + 6, 8);
+		return absoluteAddress;
+	}
+
 	static int32_t CalculateRelativeDisplacementForRelativeJump(uintptr_t relativeJumpAddress, uintptr_t destinationAddress)
 	{
 		return -int32_t(relativeJumpAddress + 5 - destinationAddress);
-	}
-
-	static bool IsRelativeNearJumpPresentAtAddress(uintptr_t address)
-	{
-		std::vector<unsigned char> buffer(1, 0x90);
-		std::vector<unsigned char> assemblyRelativeNearJumpByte = { 0xe9 };
-		MemCopy((uintptr_t)&buffer[0], address, 1);
-		if (buffer == assemblyRelativeNearJumpByte)
-		{
-			return true;
-		};
-		return false;
-	}
-
-	static bool IsAbsoluteIndirectNearJumpPresentAtAddress(uintptr_t address)
-	{
-		std::vector<unsigned char> buffer(3, 0x90);
-		std::vector<unsigned char> absoluteIndirectNearJumpBytes = { 0x48, 0xff, 0x25 };
-		MemCopy((uintptr_t)&buffer[0], address, 3);
-		if (buffer == absoluteIndirectNearJumpBytes)
-		{
-			return true;
-		}
-		return false;
-	}
-
-	static bool IsAddressHooked(uintptr_t address)
-	{
-		if(
-			IsRelativeNearJumpPresentAtAddress(address)
-			|| IsAbsoluteIndirectNearJumpPresentAtAddress(address)) 
-		{
-			return true;
-		}
-		return false;
 	}
 
 	// Places a 14-byte absolutely addressed jump from A to B. 
@@ -444,23 +469,34 @@ namespace MemoryUtils
 	static void PlaceHook(uintptr_t addressToHook, uintptr_t destinationAddress, uintptr_t* returnAddress)
 	{
 		logger.Log("Hooking...");
-		PrintBytesAtAddress(addressToHook, 20);
 
-		bool isThirdPartyHookPresent = IsAddressHooked(addressToHook);
-		uintptr_t thirdPartyHookDestination = 0;
-		if (isThirdPartyHookPresent)
+		// Most overlays don't care if we overwrite the 0xE9 jump and place it somewhere else, but MSI Afterburner does.
+		// So instead of overwriting jumps we follow them and place our jump at the final destination.
+		int maxFollowAttempts = 50;
+		int countFollowAttempts = 0;
+		while (IsAddressHooked(addressToHook))
 		{
-			logger.Log("Third-party hook detected");
 			if (IsRelativeNearJumpPresentAtAddress(addressToHook))
 			{
-				thirdPartyHookDestination = CalculateAbsoluteDestinationFromRelativeNearJumpAtAddress(addressToHook);
+				addressToHook = CalculateAbsoluteDestinationFromRelativeNearJumpAtAddress(addressToHook);
 			}
 			else if (IsAbsoluteIndirectNearJumpPresentAtAddress(addressToHook))
 			{
-				thirdPartyHookDestination = CalculateAbsoluteDestinationFromAbsoluteIndirectNearJumpAtAddress(addressToHook);
+				addressToHook = CalculateAbsoluteDestinationFromAbsoluteIndirectNearJumpAtAddress(addressToHook);
 			}
-			logger.Log("Third-party hook destination: %p", thirdPartyHookDestination);
+			else if (IsAbsoluteDirectFarJumpPresentAtAddress(addressToHook))
+			{
+				//addressToHook = CalculateAbsoluteDestinationFromAbsoluteDirectFarJumpAtAddress(addressToHook);
+			}
+
+			countFollowAttempts++;
+			if (countFollowAttempts >= maxFollowAttempts)
+			{
+				break;
+			}
 		}
+
+		PrintBytesAtAddress(addressToHook, 20);
 
 		const size_t assemblyShortJumpSize = 5;
 		const size_t assemblyFarJumpSize = 14;
@@ -484,17 +520,11 @@ namespace MemoryUtils
 			(uintptr_t)&InfoBufferForHookedAddresses[addressToHook].originalBytes[0],
 			trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer,
 			InfoBufferForHookedAddresses[addressToHook].originalBytes.size());
-
-		if (isThirdPartyHookPresent)
-		{
-			PlaceAbsoluteJump(trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer, thirdPartyHookDestination);
-		}
 	
 		PlaceAbsoluteJump(trampolineAddress + thirdPartyHookProtectionBuffer, destinationAddress);
 		PlaceAbsoluteJump(trampolineAddress + trampolineSize - assemblyFarJumpSize, trampolineReturnAddress);
 
 		*returnAddress = trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer;
-
 		PlaceRelativeJump(addressToHook, trampolineAddress, clearance);
 	}
 
