@@ -99,7 +99,7 @@ IDXGISwapChain* DirectXHook::CreateDummySwapChain()
 	desc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	desc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	desc.SampleDesc.Count = 1;
-	desc.BufferUsage = DXGI_USAGE_SHADER_INPUT;
+	desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	desc.BufferCount = 1;
 	desc.OutputWindow = hwnd;
 	desc.Windowed = TRUE;
@@ -129,7 +129,6 @@ IDXGISwapChain* DirectXHook::CreateDummySwapChain()
 
 	DestroyWindow(desc.OutputWindow);
 	UnregisterClass(wc.lpszClassName, GetModuleHandle(nullptr));
-	dummyDevice->Release();
 
 	if (FAILED(result))
 	{
@@ -192,8 +191,6 @@ void DirectXHook::HookSwapChain(
 
 	MemoryUtils::PlaceHook(presentAddress, presentDetourFunction, presentReturnAddress);
 	MemoryUtils::PlaceHook(resizeBuffersAddress, resizeBuffersDetourFunction, resizeBuffersReturnAddress);
-
-	dummySwapChain->Release();
 }
 
 void DirectXHook::HookCommandQueue(
