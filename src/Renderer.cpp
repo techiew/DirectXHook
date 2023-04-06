@@ -24,11 +24,6 @@ void Renderer::OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT wid
 	mustInitializeD3DResources = true;
 }
 
-void Renderer::SetDrawExampleTriangle(bool doDraw)
-{
-	drawExamples = doDraw;
-}
-
 void Renderer::AddRenderCallback(IRenderCallback* object)
 {
 	callbackObject = object;
@@ -38,11 +33,6 @@ void Renderer::AddRenderCallback(IRenderCallback* object)
 void Renderer::SetCommandQueue(ID3D12CommandQueue* commandQueue)
 {
 	this->commandQueue = commandQueue;
-}
-
-void Renderer::SetGetCommandQueueCallback(void (*callback)())
-{
-	callbackGetCommandQueue = callback;
 }
 
 bool Renderer::InitD3DResources(IDXGISwapChain* swapChain)
@@ -311,21 +301,6 @@ void Renderer::CreateD3D11RenderTargetViewWithWrappedBackBuffer(UINT bufferIndex
 void Renderer::Render()
 {	
 	PreRender();
-
-	if (drawExamples)
-	{
-		if (!examplesLoaded)
-		{
-			CreatePipeline();
-			CreateExampleTriangle();
-			CreateExampleFont();
-			examplesLoaded = true;
-		}
-
-		DrawExampleTriangle();
-		DrawExampleText();
-	}
-
 	RenderCallbacks();
 	PostRender();
 }

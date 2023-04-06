@@ -39,19 +39,14 @@ HRESULT __stdcall OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT 
 */
 void __stdcall OnExecuteCommandLists(ID3D12CommandQueue* pThis, UINT numCommandLists, const ID3D12CommandList** ppCommandLists)
 {
-	if (pThis->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
+	static bool commandQueueRetrieved = false;
+	if (pThis->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_DIRECT && !commandQueueRetrieved)
 	{
 		hookInstance->renderer->SetCommandQueue(pThis);
-		//hookInstance->UnhookCommandQueue();
+		commandQueueRetrieved = true;
 	}
 
 	((ExecuteCommandLists)hookInstance->executeCommandListsReturnAddress)(pThis, numCommandLists, ppCommandLists);
-}
-
-void GetCommandQueue()
-{
-	ID3D12CommandQueue* dummyCommandQueue = hookInstance->CreateDummyCommandQueue();
-	hookInstance->HookCommandQueue(dummyCommandQueue, (uintptr_t)&OnExecuteCommandLists, &hookInstance->executeCommandListsReturnAddress);
 }
 
 DirectXHook::DirectXHook(ID3DRenderer* renderer)

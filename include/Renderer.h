@@ -24,22 +24,18 @@ class Renderer : public ID3DRenderer
 public:
 	void OnPresent(IDXGISwapChain* pThis, UINT syncInterval, UINT flags);
 	void OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
-	void SetDrawExampleTriangle(bool doDraw);
 	void AddRenderCallback(IRenderCallback* object);
 	void SetCommandQueue(ID3D12CommandQueue* commandQueue);
-	void SetGetCommandQueueCallback(void (*callback)());
 
 private:
 	Logger logger{"Renderer"};
 	HWND window = 0;
 
 	IRenderCallback* callbackObject = nullptr;
-	void (*callbackGetCommandQueue)();
 	bool mustInitializeD3DResources = true;
 	bool firstTimeInitPerformed = false;
 	bool isDeviceRetrieved = false;
 	bool isRunningD3D12 = false;
-	bool getCommandQueueCalled = false;
 	bool drawExamples = false;
 	bool examplesLoaded = false;
 	bool callbackInitialized = false;
@@ -51,7 +47,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Device> d3d12Device = nullptr;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> d3d11Context = nullptr;
 	Microsoft::WRL::ComPtr<ID3D11Device> d3d11Device = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12CommandQueue> commandQueue = nullptr;
+	std::atomic<ID3D12CommandQueue*> commandQueue = nullptr;
 	Microsoft::WRL::ComPtr<ID3D11On12Device> d3d11On12Device = nullptr;
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> d3d12RenderTargets;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11Resource>> d3d11WrappedBackBuffers;
