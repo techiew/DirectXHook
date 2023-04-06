@@ -5,11 +5,6 @@
 
 static DirectXHook* hookInstance = nullptr;
 
-/* 
-* Note: The non-member functions in this file are defined as such because
-* you are not allowed to pass around pointers to member functions.
-*/
-
 /*
 * Present will get hooked and detour to this function.
 * Present is part of the final rendering stage in DirectX.
@@ -70,14 +65,13 @@ void DirectXHook::Hook()
 	logger.Log("OnPresent: %p", &OnPresent);
 	logger.Log("OnResizeBuffers: %p", &OnResizeBuffers);
 
-	renderer->SetGetCommandQueueCallback(&GetCommandQueue);
-	IDXGISwapChain* dummySwapChain = CreateDummySwapChain();
-	HookSwapChain(dummySwapChain, (uintptr_t)&OnPresent, (uintptr_t)&OnResizeBuffers, &presentReturnAddress, &resizeBuffersReturnAddress);
-}
+	CreateDummyDeviceAndSwapChain();
+	HookSwapChain(dummySwapChain.Get(), (uintptr_t)&OnPresent, (uintptr_t)&OnResizeBuffers, &presentReturnAddress, &resizeBuffersReturnAddress);
 
-void DirectXHook::SetDrawExampleTriangle(bool doDraw)
-{
-	((Renderer*)renderer)->SetDrawExampleTriangle(doDraw);
+	CreateDummyCommandQueue();
+	HookCommandQueue(dummyCommandQueue.Get(), (uintptr_t)&OnExecuteCommandLists, &hookInstance->executeCommandListsReturnAddress);
+
+	SafelyReleaseDummyResources();
 }
 
 void DirectXHook::AddRenderCallback(IRenderCallback* object)
@@ -85,7 +79,7 @@ void DirectXHook::AddRenderCallback(IRenderCallback* object)
 	renderer->AddRenderCallback(object);
 }
 
-IDXGISwapChain* DirectXHook::CreateDummySwapChain()
+void DirectXHook::CreateDummyDeviceAndSwapChain()
 {
 	WNDCLASSEX wc { 0 };
 	wc.cbSize = sizeof(wc);
@@ -111,8 +105,6 @@ IDXGISwapChain* DirectXHook::CreateDummySwapChain()
 		D3D_FEATURE_LEVEL_11_1
 	};
 
-	ID3D11Device* dummyDevice = nullptr;
-	IDXGISwapChain* dummySwapChain = nullptr;
 	HRESULT result = D3D11CreateDeviceAndSwapChain(
 		NULL, 
 		D3D_DRIVER_TYPE_HARDWARE,
@@ -122,115 +114,40 @@ IDXGISwapChain* DirectXHook::CreateDummySwapChain()
 		1,
 		D3D11_SDK_VERSION,
 		&desc, 
-		&dummySwapChain,
-		&dummyDevice, 
+		dummySwapChain.GetAddressOf(),
+		dummyD3D11Device.GetAddressOf(), 
 		NULL, 
 		NULL);
 
 	DestroyWindow(desc.OutputWindow);
 	UnregisterClass(wc.lpszClassName, GetModuleHandle(nullptr));
-	//dummySwapChain->Release();
-	//dummyDevice->Release();
 
 	if (FAILED(result))
 	{
 		_com_error error(result);
 		logger.Log("D3D11CreateDeviceAndSwapChain failed: %s", error.ErrorMessage());
-		return nullptr;
+		return;
 	}
 
 	logger.Log("D3D11CreateDeviceAndSwapChain succeeded");
-	return dummySwapChain;
 }
 
-//IDXGISwapChain* DirectXHook::CreateDummySwapChain(ID3D11Device* dummyDevice)
-//{
-//	IDXGIDevice2* pDXGIDevice;
-//	CheckSuccess(dummyDevice->QueryInterface(__uuidof(IDXGIDevice2), (void**)&pDXGIDevice));
-//
-//	IDXGIAdapter* pDXGIAdapter;
-//	CheckSuccess(pDXGIDevice->GetParent(__uuidof(IDXGIAdapter), (void**)&pDXGIAdapter));
-//
-//	WNDCLASSEX wc { 0 };
-//	wc.cbSize = sizeof(wc);
-//	wc.lpfnWndProc = DefWindowProc;
-//	wc.lpszClassName = TEXT("dummy class");
-//	RegisterClassExA(&wc);
-//	HWND hwnd = CreateWindow(wc.lpszClassName, TEXT(""), WS_DISABLED, 0, 0, 0, 0, NULL, NULL, NULL, nullptr);
-//
-//	DXGI_SWAP_CHAIN_DESC1 desc{ 0 };
-//	desc.Width = 1;
-//	desc.Height = 1;
-//	desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-//	desc.Stereo = FALSE;
-//	desc.SampleDesc = { 1, 0 };
-//	desc.BufferUsage = DXGI_USAGE_BACK_BUFFER;
-//	desc.BufferCount = 2;
-//	desc.Scaling = DXGI_SCALING_STRETCH;
-//	desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-//	desc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
-//	desc.Flags = DXGI_SWAP_CHAIN_FLAG_DISPLAY_ONLY;
-//
-//	IDXGIFactory2* pIDXGIFactory = nullptr;
-//	CheckSuccess(pDXGIAdapter->GetParent(__uuidof(IDXGIFactory2), (void**)&pIDXGIFactory));
-//
-//	IDXGISwapChain* dummySwapChain = nullptr;
-//	IDXGISwapChain1* dummySwapChain1 = nullptr;
-//	CheckSuccess(pIDXGIFactory->CreateSwapChainForHwnd(
-//		dummyDevice,
-//		hwnd,
-//		&desc,
-//		NULL,
-//		NULL,
-//		&dummySwapChain1));
-//
-//	DestroyWindow(hwnd);
-//	UnregisterClass(wc.lpszClassName, GetModuleHandle(nullptr));
-//
-//	CheckSuccess(dummySwapChain1->QueryInterface(__uuidof(IDXGISwapChain), (void**)&dummySwapChain));
-//	//dummySwapChain1->Release();
-//	return dummySwapChain;
-//}
+void DirectXHook::CreateDummyD3D12Device()
+{
+	D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), reinterpret_cast<void**>(dummyD3D12Device.GetAddressOf()));
+}
 
-//ID3D11Device* DirectXHook::CreateDummyD3D11Device()
-//{
-//	D3D_FEATURE_LEVEL featureLevels[] =
-//	{
-//		D3D_FEATURE_LEVEL_11_0,
-//		D3D_FEATURE_LEVEL_11_1
-//	};
-//
-//	ID3D11Device* dummyDevice = nullptr;
-//	CheckSuccess(D3D11CreateDevice(
-//		NULL,
-//		D3D_DRIVER_TYPE_HARDWARE,
-//		NULL,
-//		0,
-//		featureLevels,
-//		2,
-//		D3D11_SDK_VERSION,
-//		&dummyDevice,
-//		NULL,
-//		NULL));
-//
-//	return dummyDevice;
-//}
-
-ID3D12CommandQueue* DirectXHook::CreateDummyCommandQueue()
+void DirectXHook::CreateDummyCommandQueue()
 {
 	D3D12_COMMAND_QUEUE_DESC queueDesc {};
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-	ID3D12Device* d12Device = nullptr;
-	D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), (void**)&d12Device);
+	CreateDummyD3D12Device();
 
-	ID3D12CommandQueue* dummyCommandQueue;
-	d12Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&dummyCommandQueue));
+	dummyD3D12Device->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(dummyCommandQueue.GetAddressOf()));
 
 	logger.Log("Command queue: %p", dummyCommandQueue);
-
-	return dummyCommandQueue;
 }
 
 void DirectXHook::HookSwapChain(
@@ -266,8 +183,6 @@ void DirectXHook::HookSwapChain(
 
 	MemoryUtils::PlaceHook(presentAddress, presentDetourFunction, presentReturnAddress);
 	MemoryUtils::PlaceHook(resizeBuffersAddress, resizeBuffersDetourFunction, resizeBuffersReturnAddress);
-
-	dummySwapChain->Release();
 }
 
 void DirectXHook::HookCommandQueue(
@@ -297,10 +212,37 @@ void DirectXHook::HookCommandQueue(
 	}
 
 	MemoryUtils::PlaceHook(executeCommandListsAddress, executeCommandListsDetourFunction, executeCommandListsReturnAddress);
-	dummyCommandQueue->Release();
 }
 
 void DirectXHook::UnhookCommandQueue()
 {
 	MemoryUtils::Unhook(executeCommandListsAddress);
+}
+
+void DirectXHook::SafelyReleaseDummyResources()
+{
+	bool isRtssLoaded =
+		MemoryUtils::IsDllLoaded("RTSSHooks64.dll")
+		|| MemoryUtils::IsDllLoaded("RTSSHooks.dll");
+	if (isRtssLoaded)
+	{
+		// Don't release our dummy resources as RTSS will cause a crash.
+		// This only happens if this hook is injected (not proxied) between
+		// 5-10 seconds after the game has booted.
+		// I think RTSS hooks D3D11CreateDeviceAndSwapChain and grabs
+		// the dummy resources we create. This causes a null pointer error 
+		// if we release them.
+		logger.Log("RTSS is loaded");
+	}
+	else
+	{
+		// Not releasing the swapchain and device will with some games 
+		// increase the GPU wattage quite dramatically, even if they 
+		// are not actually in use. However it does not seem to increase
+		// GPU USAGE or affect performance.
+		dummySwapChain->Release();
+		dummyCommandQueue->Release();
+		dummyD3D11Device->Release();
+		dummyD3D12Device->Release();
+	}
 }

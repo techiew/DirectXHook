@@ -64,6 +64,16 @@ namespace MemoryUtils
 		ToggleMemoryProtection(true, address, numBytes);
 	}
 
+	static bool IsDllLoaded(std::string dllName)
+	{
+		HMODULE module = GetModuleHandleA(dllName.c_str());
+		if (module == NULL)
+		{
+			return false;
+		}
+		return true;
+	}
+
 	// Gets the base address of the game's memory.
 	static uintptr_t GetProcessBaseAddress(DWORD processId)
 	{
