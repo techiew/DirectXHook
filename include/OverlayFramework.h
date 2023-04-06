@@ -25,6 +25,8 @@ namespace OF
 		float z = 0.0f;
 		int width = 0;
 		int height = 0;
+		float scale = 0.0f;
+		float rotationDegrees = 0.0f;
 		bool pressed = false;
 		bool clicked = false;
 		bool hover = false;
@@ -46,7 +48,7 @@ namespace OF
 	constexpr unsigned char UNBOUND = 0x07;
 	const double PI = 3.141592653589793238463;
 
-	static ID3D11Device* ofDevice = nullptr;
+	static Microsoft::WRL::ComPtr<ID3D11Device> ofDevice = nullptr;
 	static std::shared_ptr<DirectX::SpriteBatch> ofSpriteBatch = nullptr;
 	static std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> ofTextures = std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>>();
 	static std::vector<std::shared_ptr<DirectX::SpriteFont>> ofFonts = std::vector<std::shared_ptr<DirectX::SpriteFont>>();
@@ -121,18 +123,15 @@ namespace OF
 		}
 		file.close();
 
-		HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-		if (FAILED(hr))
-		{
-			logger.Log("Error %#010x when initializing the COM library", hr);
-		}
-		else
-		{
-			logger.Log("Successfully initialized the COM library");
-		}
+		HRESULT hrCOM = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> texture = nullptr;
 		HRESULT texResult = DirectX::CreateWICTextureFromFile(ofDevice.Get(), wideString.c_str(), nullptr, texture.GetAddressOf());
+
+		if (hrCOM == S_OK)
+		{
+			CoUninitialize();
+		}
 
 		_com_error texErr(texResult);
 		logger.Log("Texture HRESULT: %s", texErr.ErrorMessage());
@@ -302,21 +301,28 @@ namespace OF
 	
 		POINT position = GetAbsolutePosition(box);
 
-		int oddOrEven = 0;
-		if (box->height % 2 != 0)
-		{
-			oddOrEven = 1;
-		}
-		RECT rect;
-		rect.top = position.y + ((float)box->height * 0.5) + oddOrEven;
-		rect.left = position.x + ((float)box->width * 0.5) + oddOrEven;
-		rect.bottom = rect.top + box->height;
-		rect.right = rect.left + box->width;
+		const float heightScaled = static_cast<float>(box->height) * box->scale;
+		const float widthScaled = static_cast<float>(box->width) * box->scale;
+		const int height = static_cast<int>(heightScaled);
+		const int width = static_cast<int>(widthScaled);
 
-		float rotation = MapFloatToRange(box->rotationDegrees, 0.0f, 360.0f, 0.0f, 2 * PI);
+		RECT rect = {};
+		rect.top = position.y + box->height / 2 + box->height % 2;
+		rect.left = position.x + box->width / 2 + box->width % 2;
+		rect.bottom = rect.top + height;
+		rect.right = rect.left + width;
 
 		box->hasBeenRendered = true;
-		ofSpriteBatch->Draw(ofTextures[textureID].Get(), rect, nullptr, color, 0.0f, DirectX::XMFLOAT2(0.0f, 0.0f), DirectX::SpriteEffects_None, box->z);
+
+		ofSpriteBatch->Draw(
+			ofTextures[textureID].Get(), 
+			rect, 
+			nullptr, 
+			color, 
+			box->rotationDegrees, 
+			DirectX::XMFLOAT2(static_cast<float>(box->width) * 0.5f, static_cast<float>(box->height) * 0.5f), 
+			DirectX::SpriteEffects_None, 
+			box->z);
 	}
 
 	static void DrawBox(Box* box, int textureID)
