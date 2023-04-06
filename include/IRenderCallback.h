@@ -8,6 +8,8 @@
 class IRenderCallback
 {
 public:
+	bool initialized = false;
+
 	virtual void Setup() { };
 	virtual void Render() = 0;
 	void Init(

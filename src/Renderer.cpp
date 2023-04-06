@@ -24,10 +24,9 @@ void Renderer::OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT wid
 	mustInitializeD3DResources = true;
 }
 
-void Renderer::AddRenderCallback(IRenderCallback* object)
+void Renderer::AddRenderCallback(IRenderCallback* callback)
 {
-	callbackObject = object;
-	callbackInitialized = false;
+	renderCallbacks.push_back(callback);
 }
 
 void Renderer::SetCommandQueue(ID3D12CommandQueue* commandQueue)
@@ -330,17 +329,17 @@ void Renderer::PreRender()
 
 void Renderer::RenderCallbacks()
 {
-	if (callbackObject != nullptr)
+	for (auto& callback : renderCallbacks)
 	{
-		if (!callbackInitialized)
+		if (!callback->initialized)
 		{
-			callbackObject->Init(d3d11Device, d3d11Context, spriteBatch, window);
-			callbackObject->Setup();
-			callbackInitialized = true;
+			callback->Init(d3d11Device, d3d11Context, spriteBatch, window);
+			callback->Setup();
+			callback->initialized = true;
 		}
 
 		spriteBatch->Begin(SpriteSortMode_BackToFront);
-		callbackObject->Render();
+		callback->Render();
 		spriteBatch->End();
 	}
 }

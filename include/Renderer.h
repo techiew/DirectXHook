@@ -32,7 +32,7 @@ private:
 	Logger logger{"Renderer"};
 	HWND window = 0;
 
-	IRenderCallback* callbackObject = nullptr;
+	std::vector<IRenderCallback*> renderCallbacks;
 	bool mustInitializeD3DResources = true;
 	bool firstTimeInitPerformed = false;
 	bool isDeviceRetrieved = false;
