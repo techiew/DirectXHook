@@ -37,13 +37,19 @@ public:
 	void Hook();
 	void SetDrawExampleTriangle(bool doDraw);
 	void AddRenderCallback(IRenderCallback* object);
-	ID3D12CommandQueue* CreateDummyCommandQueue();
+	void CreateDummyCommandQueue();
 	void HookCommandQueue(ID3D12CommandQueue* dummyCommandQueue, uintptr_t executeCommandListsDetourFunction, uintptr_t* executeCommandListsReturnAddress);
 	void UnhookCommandQueue();
 
 private:
 	Logger logger{ "DirectXHook" };
+	Microsoft::WRL::ComPtr<IDXGISwapChain> dummySwapChain = nullptr;
+	Microsoft::WRL::ComPtr<ID3D11Device> dummyD3D11Device = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Device> dummyD3D12Device = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue> dummyCommandQueue = nullptr;
 
-	IDXGISwapChain* CreateDummySwapChain();
+	void CreateDummyDeviceAndSwapChain();
+	void CreateDummyD3D12Device();
 	void HookSwapChain(IDXGISwapChain* dummySwapChain, uintptr_t presentDetourFunction, uintptr_t resizeBuffersDetourFunction, uintptr_t* presentReturnAddress, uintptr_t* resizeBuffersReturnAddress);
+	void SafelyReleaseDummyResources();
 };
