@@ -39,7 +39,6 @@ public:
 	void AddRenderCallback(IRenderCallback* object);
 	void CreateDummyCommandQueue();
 	void HookCommandQueue(ID3D12CommandQueue* dummyCommandQueue, uintptr_t executeCommandListsDetourFunction, uintptr_t* executeCommandListsReturnAddress);
-	void UnhookCommandQueue();
 
 private:
 	Logger logger{ "DirectXHook" };

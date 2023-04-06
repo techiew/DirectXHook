@@ -209,11 +209,6 @@ void DirectXHook::HookCommandQueue(
 	MemoryUtils::PlaceHook(executeCommandListsAddress, executeCommandListsDetourFunction, executeCommandListsReturnAddress);
 }
 
-void DirectXHook::UnhookCommandQueue()
-{
-	MemoryUtils::Unhook(executeCommandListsAddress);
-}
-
 void DirectXHook::SafelyReleaseDummyResources()
 {
 	bool isRtssLoaded =
