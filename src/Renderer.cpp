@@ -58,9 +58,9 @@ bool Renderer::InitD3DResources(IDXGISwapChain* swapChain)
 		CreateViewport();
 		InitD3D();
 	}
-	catch (std::string errorMsg)
+	catch (std::runtime_error e)
 	{
-		logger.Log(errorMsg);
+		logger.Log("Exception: %s", e.what());
 		return false;
 	}
 
@@ -73,14 +73,7 @@ bool Renderer::RetrieveD3DDeviceFromSwapChain()
 {
 	logger.Log("Retrieving D3D device...");
 
-	bool d3d11DeviceRetrieved = SUCCEEDED(swapChain->GetDevice(__uuidof(ID3D11Device), (void**)d3d11Device.GetAddressOf()));
-	if (d3d11DeviceRetrieved)
-	{
-		logger.Log("Retrieved D3D11 device");
-		return true;
-	}
-	
-	bool d3d12DeviceRetrieved = SUCCEEDED(swapChain->GetDevice(__uuidof(ID3D12Device), (void**)d3d12Device.GetAddressOf()));
+	bool d3d12DeviceRetrieved = SUCCEEDED(swapChain->GetDevice(IID_PPV_ARGS(d3d12Device.GetAddressOf())));
 	if (d3d12DeviceRetrieved)
 	{
 		logger.Log("Retrieved D3D12 device");
@@ -88,7 +81,15 @@ bool Renderer::RetrieveD3DDeviceFromSwapChain()
 		return true;
 	}
 
-	throw("Failed to retrieve D3D device");
+	bool d3d11DeviceRetrieved = SUCCEEDED(swapChain->GetDevice(IID_PPV_ARGS(d3d11Device.GetAddressOf())));
+	if (d3d11DeviceRetrieved)
+	{
+		logger.Log("Retrieved D3D11 device");
+		isRunningD3D12 = false;
+		return true;
+	}
+
+	throw std::runtime_error("Failed to retrieve D3D device");
 }
 
 void Renderer::GetSwapChainDescription()
@@ -159,18 +160,21 @@ void Renderer::InitD3D11()
 
 void Renderer::CreateD3D11Context()
 {
+	logger.Log("Creating D3D11 context...");
 	d3d11Device->GetImmediateContext(&d3d11Context);
 }
 
 void Renderer::CreateSpriteBatch()
 {
+	logger.Log("Creating spritebatch...");
 	spriteBatch = std::make_shared<SpriteBatch>(d3d11Context.Get());
 }
 
 void Renderer::CreateD3D11RenderTargetView()
 {
+	logger.Log("Creating D3D11 render target view...");
 	ComPtr<ID3D11Texture2D> backbuffer;
-	swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)backbuffer.GetAddressOf());
+	swapChain->GetBuffer(0, IID_PPV_ARGS(backbuffer.GetAddressOf()));
 	d3d11RenderTargetViews = std::vector<ComPtr<ID3D11RenderTargetView>>(1, nullptr);
 	d3d11Device->CreateRenderTargetView(backbuffer.Get(), nullptr, d3d11RenderTargetViews[0].GetAddressOf());
 	backbuffer.ReleaseAndGetAddressOf();
@@ -183,7 +187,7 @@ void Renderer::InitD3D12()
 	if (!firstTimeInitPerformed)
 	{
 		CreateD3D11On12Device();
-		CheckSuccess(swapChain->QueryInterface(__uuidof(IDXGISwapChain3), &swapChain3));
+		CheckSuccess(swapChain->QueryInterface(IID_PPV_ARGS(&swapChain3)));
 		CreateSpriteBatch();
 	}
 	CreateD3D12Buffers();
@@ -195,14 +199,9 @@ bool Renderer::WaitForCommandQueueIfRunningD3D12()
 {
 	if (isRunningD3D12)
 	{
-		if (commandQueue.Get() == nullptr)
+		if (commandQueue == nullptr)
 		{
 			logger.Log("Waiting for command queue...");
-			if (!getCommandQueueCalled && callbackGetCommandQueue != nullptr)
-			{
-				callbackGetCommandQueue();
-				getCommandQueueCalled = true;
-			}
 			return true;
 		}
 	}
@@ -211,6 +210,8 @@ bool Renderer::WaitForCommandQueueIfRunningD3D12()
 
 void Renderer::CreateD3D11On12Device()
 {
+	logger.Log("Creating D3D11On12Device...");
+
 	D3D_FEATURE_LEVEL featureLevels = { D3D_FEATURE_LEVEL_11_0 };
 	bool d3d11On12DeviceCreated = CheckSuccess(
 		D3D11On12CreateDevice(
@@ -218,7 +219,7 @@ void Renderer::CreateD3D11On12Device()
 			NULL,
 			&featureLevels,
 			1,
-			reinterpret_cast<IUnknown**>(commandQueue.GetAddressOf()),
+			reinterpret_cast<IUnknown**>(&commandQueue),
 			1,
 			0,
 			d3d11Device.GetAddressOf(),
@@ -229,12 +230,13 @@ void Renderer::CreateD3D11On12Device()
 
 	if (!d3d11On12DeviceCreated || !d3d11On12DeviceChecked)
 	{
-		throw("Failed to create D3D11On12 device");
+		throw std::runtime_error("Failed to create D3D11On12 device");
 	}
 }
 
 void Renderer::CreateD3D12Buffers()
 {
+	logger.Log("Creating D3D12 buffers...");
 	d3d12RenderTargets = std::vector<ComPtr<ID3D12Resource>>(bufferCount, nullptr);
 	d3d11WrappedBackBuffers = std::vector<ComPtr<ID3D11Resource>>(bufferCount, nullptr);
 	d3d11RenderTargetViews = std::vector<ComPtr<ID3D11RenderTargetView>>(bufferCount, nullptr);
@@ -253,6 +255,7 @@ void Renderer::CreateD3D12Buffers()
 
 ComPtr<ID3D12DescriptorHeap> Renderer::CreateD3D12RtvHeap()
 {
+	logger.Log("Creating D3D12 RTV heap...");
 	ComPtr<ID3D12DescriptorHeap> rtvHeap;
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
 	rtvHeapDesc.NumDescriptors = bufferCount;
@@ -264,6 +267,7 @@ ComPtr<ID3D12DescriptorHeap> Renderer::CreateD3D12RtvHeap()
 
 void Renderer::CreateD3D12RenderTargetView(UINT bufferIndex, D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle)
 {
+	logger.Log("Creating D3D12 render target view...");
 	if (!CheckSuccess(swapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&d3d12RenderTargets[bufferIndex]))))
 	{
 		throw("Failed to create D3D12 render target view");
@@ -273,6 +277,7 @@ void Renderer::CreateD3D12RenderTargetView(UINT bufferIndex, D3D12_CPU_DESCRIPTO
 
 void Renderer::CreateD3D11WrappedBackBuffer(UINT bufferIndex)
 {
+	logger.Log("Creating D3D11 wrapped backbuffer...");
 	D3D11_RESOURCE_FLAGS d3d11Flags = { D3D11_BIND_RENDER_TARGET };
 	if (!CheckSuccess(
 		d3d11On12Device->CreateWrappedResource(
@@ -282,19 +287,20 @@ void Renderer::CreateD3D11WrappedBackBuffer(UINT bufferIndex)
 			D3D12_RESOURCE_STATE_PRESENT,
 			IID_PPV_ARGS(&d3d11WrappedBackBuffers[bufferIndex]))))
 	{
-		throw "Failed to create D3D11 wrapped backbuffer";
+		throw std::runtime_error("Failed to create D3D11 wrapped backbuffer");
 	}
 }
 
 void Renderer::CreateD3D11RenderTargetViewWithWrappedBackBuffer(UINT bufferIndex)
 {
+	logger.Log("Creating D3D11 render target view with wrapped backbuffer...");
 	if (!CheckSuccess(
 		d3d11Device->CreateRenderTargetView(
 			d3d11WrappedBackBuffers[bufferIndex].Get(),
 			nullptr,
 			d3d11RenderTargetViews[bufferIndex].GetAddressOf())))
 	{
-		throw "Failed to create D3D11 render target view";
+		throw std::runtime_error("Failed to create D3D11 render target view");
 	}
 }
 
@@ -697,6 +703,6 @@ bool Renderer::CheckSuccess(HRESULT hr)
 		return true;
 	}
 	_com_error err(hr);
-	logger.Log("%s", err.ErrorMessage());
+	logger.Log("HRESULT error: %s", err.ErrorMessage());
 	return false;
 }
