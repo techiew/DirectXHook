@@ -18,7 +18,6 @@
 #include "IRenderCallback.h"
 #include "Logger.h"
 
-// D3D11 renderer with support for D3D12 using D3D11On12
 class Renderer : public ID3DRenderer
 {
 public:
@@ -39,7 +38,6 @@ private:
 	bool isRunningD3D12 = false;
 	bool drawExamples = false;
 	bool examplesLoaded = false;
-	bool callbackInitialized = false;
 	int windowWidth = 0;
 	int windowHeight = 0;
 	UINT bufferIndex = 0;
@@ -60,49 +58,6 @@ private:
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
 	D3D11_VIEWPORT viewport;
 
-	// Load the shaders from disk at compile time into a string.
-	const char* shaderData = {
-		#include "Shaders.hlsl"
-	};
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> vertexShader = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShaderTextures = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11RasterizerState> rasterizerState = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> depthStencilState = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> depthStencilBuffer = nullptr;
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> depthStencilView = nullptr;
-
-	DirectX::XMVECTOR trianglePos = { 0.0f, 0.0f, -5.0f };
-	DirectX::XMFLOAT3 triangleScale = DirectX::XMFLOAT3(0.7f, 0.7f, 0.7f);
-	DirectX::XMFLOAT3 triangleNdc = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-	unsigned int triangleNumIndices = 0;
-	float triangleSpeed = 0.003f;
-	float triangleVelX = triangleSpeed;
-	float triangleVelY = -triangleSpeed;
-	float triangleRotX = 0;
-	float triangleRotY = 0;
-	float triangleRotZ = 0;
-	float triangleCounter = 0;
-
-	struct Vertex
-	{
-		DirectX::XMFLOAT3 pos;
-		DirectX::XMFLOAT4 color;
-		DirectX::XMFLOAT2 texCoord;
-	};
-
-	struct ConstantBufferData
-	{
-		DirectX::XMMATRIX wvp = DirectX::XMMatrixIdentity();
-	}
-	constantBufferData;
-
 	bool InitD3DResources(IDXGISwapChain* swapChain);
 	bool RetrieveD3DDeviceFromSwapChain();
 	void GetSwapChainDescription();
@@ -111,7 +66,7 @@ private:
 	void CreateViewport();
 	void InitD3D();
 	void InitD3D11();
-	void CreateD3D11Context();
+	void GetD3D11Context();
 	void CreateSpriteBatch();
 	void CreateD3D11RenderTargetView();
 	void InitD3D12();
@@ -126,12 +81,6 @@ private:
 	void PreRender();
 	void RenderCallbacks();
 	void PostRender();
-	void CreatePipeline();
-	Microsoft::WRL::ComPtr<ID3DBlob> LoadShader(const char* shaderData, std::string targetShaderVersion, std::string shaderEntry);
-	void CreateExampleTriangle();
-	void CreateExampleFont();
-	void DrawExampleTriangle();
-	void DrawExampleText();
 	void ReleaseViewsBuffersAndContext();
 	bool CheckSuccess(HRESULT hr);
 };

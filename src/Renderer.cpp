@@ -41,7 +41,14 @@ Renderer* Renderer::Clone()
 
 bool Renderer::InitD3DResources(IDXGISwapChain* swapChain)
 {
-	logger.Log("Initializing D3D resources...");
+	if (!firstTimeInitPerformed)
+	{
+		logger.Log("Initializing D3D resources...");
+	}
+	else
+	{
+		logger.Log("Resizing buffers...");
+	}
 
 	try
 	{
@@ -162,7 +169,7 @@ void Renderer::InitD3D11()
 	logger.Log("Initialized D3D11");
 }
 
-void Renderer::CreateD3D11Context()
+void Renderer::GetD3D11Context()
 {
 	logger.Log("Creating D3D11 context...");
 	d3d11Device->GetImmediateContext(&d3d11Context);
@@ -274,7 +281,7 @@ void Renderer::CreateD3D12RenderTargetView(UINT bufferIndex, D3D12_CPU_DESCRIPTO
 	logger.Log("Creating D3D12 render target view...");
 	if (!CheckSuccess(swapChain->GetBuffer(bufferIndex, IID_PPV_ARGS(&d3d12RenderTargets[bufferIndex]))))
 	{
-		throw("Failed to create D3D12 render target view");
+		throw std::runtime_error("Failed to create D3D12 render target view");
 	}
 	d3d12Device->CreateRenderTargetView(d3d12RenderTargets[bufferIndex].Get(), nullptr, rtvHandle);
 }
@@ -353,344 +360,28 @@ void Renderer::PostRender()
 	}
 }
 
-// Creates the necessary things for rendering the examples
-void Renderer::CreatePipeline()
+void Renderer::ReleaseViewsBuffersAndContext()
 {
-	ComPtr<ID3DBlob> vertexShaderBlob = LoadShader(shaderData, "vs_5_0", "VS").Get();
-	ComPtr<ID3DBlob> pixelShaderTexturesBlob = LoadShader(shaderData, "ps_5_0", "PSTex").Get();
-	ComPtr<ID3DBlob> pixelShaderBlob = LoadShader(shaderData, "ps_5_0", "PS").Get();
-
-	d3d11Device->CreateVertexShader(
-		vertexShaderBlob->GetBufferPointer(),
-		vertexShaderBlob->GetBufferSize(),
-		nullptr, 
-		vertexShader.GetAddressOf());
-
-	d3d11Device->CreatePixelShader(
-		pixelShaderTexturesBlob->GetBufferPointer(),
-		pixelShaderTexturesBlob->GetBufferSize(), 
-		nullptr, 
-		pixelShaderTextures.GetAddressOf());
-
-	d3d11Device->CreatePixelShader(pixelShaderBlob->GetBufferPointer(),
-		pixelShaderBlob->GetBufferSize(), nullptr, pixelShader.GetAddressOf());
-
-	D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[3] =
+	if (isRunningD3D12)
 	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
-	};
-
-	d3d11Device->CreateInputLayout(
-		inputLayoutDesc,
-		ARRAYSIZE(inputLayoutDesc),
-		vertexShaderBlob->GetBufferPointer(),
-		vertexShaderBlob->GetBufferSize(), 
-		inputLayout.GetAddressOf());
-
-	D3D11_SAMPLER_DESC samplerDesc;
-	ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
-	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-	samplerDesc.MinLOD = 0;
-	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-	d3d11Device->CreateSamplerState(&samplerDesc, &samplerState);
-
-	D3D11_TEXTURE2D_DESC dsDesc;
-	dsDesc.Width = windowWidth;
-	dsDesc.Height = windowHeight;
-	dsDesc.MipLevels = 1;
-	dsDesc.ArraySize = 1;
-	dsDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	dsDesc.SampleDesc.Count = 1;
-	dsDesc.SampleDesc.Quality = 0;
-	dsDesc.Usage = D3D11_USAGE_DEFAULT;
-	dsDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	dsDesc.CPUAccessFlags = 0;
-	dsDesc.MiscFlags = 0;
-
-	d3d11Device->CreateTexture2D(&dsDesc, 0, depthStencilBuffer.GetAddressOf());
-	d3d11Device->CreateDepthStencilView(depthStencilBuffer.Get(), 0, depthStencilView.GetAddressOf());
-}
-
-ComPtr<ID3DBlob> Renderer::LoadShader(const char* shader, std::string targetShaderVersion, std::string shaderEntry)
-{
-	logger.Log("Loading shader: %s", shaderEntry.c_str());
-	ComPtr<ID3DBlob> errorBlob = nullptr;
-	ComPtr<ID3DBlob> shaderBlob;
-
-	D3DCompile(
-		shader, 
-		strlen(shader), 
-		0, 
-		nullptr, 
-		nullptr, 
-		shaderEntry.c_str(), 
-		targetShaderVersion.c_str(), 
-		D3DCOMPILE_ENABLE_STRICTNESS, 
-		0, 
-		shaderBlob.GetAddressOf(), 
-		errorBlob.GetAddressOf());
-
-	if (errorBlob)
-	{
-		char error[256]{ 0 };
-		memcpy(error, errorBlob->GetBufferPointer(), errorBlob->GetBufferSize());
-		logger.Log("Shader error: %s", error);
-		return nullptr;
-	}
-
-	return shaderBlob;
-}
-
-void Renderer::CreateExampleTriangle()
-{
-	// Create the vertex buffer
-	Vertex vertices[] =
-	{
-		{ XMFLOAT3(0.0f, 0.1f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f), XMFLOAT2(0.5f, 0.0f) },
-		{ XMFLOAT3(0.1f, -0.1f, 0.1f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.5f) },
-		{ XMFLOAT3(-0.1f, -0.1f, 0.1f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f), XMFLOAT2(0.0f, 0.5f) },
-		{ XMFLOAT3(0.0f, -0.1f, -0.1f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f), XMFLOAT2(1.0f, 0.5f) }
-	};
-
-	D3D11_BUFFER_DESC vbDesc = { 0 };
-	ZeroMemory(&vbDesc, sizeof(D3D11_BUFFER_DESC));
-	vbDesc.ByteWidth = sizeof(Vertex) * ARRAYSIZE(vertices);
-	vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	vbDesc.Usage = D3D11_USAGE_DEFAULT;
-	vbDesc.StructureByteStride = sizeof(Vertex);
-
-	D3D11_SUBRESOURCE_DATA vbData = { vertices, 0, 0 };
-
-	d3d11Device->CreateBuffer(&vbDesc, &vbData, vertexBuffer.GetAddressOf());
-
-	// Create the index buffer
-	unsigned int indices[] =
-	{
-		0, 2, 1,
-		0, 3, 2,
-		0, 1, 3,
-		1, 2, 3
-	};
-
-	triangleNumIndices = ARRAYSIZE(indices);
-
-	D3D11_BUFFER_DESC ibDesc;
-	ZeroMemory(&ibDesc, sizeof(ibDesc));
-	ibDesc.ByteWidth = sizeof(unsigned int) * ARRAYSIZE(indices);
-	ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	ibDesc.Usage = D3D11_USAGE_DEFAULT;
-	ibDesc.CPUAccessFlags = 0;
-	ibDesc.MiscFlags = 0;
-
-	D3D11_SUBRESOURCE_DATA ibData = { indices, 0, 0 };
-
-	d3d11Device->CreateBuffer(&ibDesc, &ibData, indexBuffer.GetAddressOf());
-
-	// Create the constant buffer
-	// We need to send the world view projection (WVP) matrix to the shader
-	D3D11_BUFFER_DESC cbDesc = { 0 };
-	ZeroMemory(&cbDesc, sizeof(D3D11_BUFFER_DESC));
-	cbDesc.ByteWidth = sizeof(ConstantBufferData);
-	cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	cbDesc.MiscFlags = 0;
-	cbDesc.StructureByteStride = 0;
-
-	D3D11_SUBRESOURCE_DATA cbData = { &constantBufferData, 0, 0 };
-
-	d3d11Device->CreateBuffer(&cbDesc, &cbData, constantBuffer.GetAddressOf());
-
-	// Create the rasterizer state.
-	// We need to control which face of a shape is culled, and we need to know which order to set our indices
-	D3D11_RASTERIZER_DESC rsDesc;
-	ZeroMemory(&rsDesc, sizeof(D3D11_RASTERIZER_DESC));
-	rsDesc.FillMode = D3D11_FILL_SOLID;
-	rsDesc.CullMode = D3D11_CULL_BACK;
-	rsDesc.FrontCounterClockwise = FALSE;
-	rsDesc.DepthClipEnable = TRUE;
-
-	d3d11Device->CreateRasterizerState(&rsDesc, rasterizerState.GetAddressOf());
-
-	// Create the depth stencil state
-	D3D11_DEPTH_STENCIL_DESC dsDesc;
-	ZeroMemory(&dsDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
-	dsDesc.DepthEnable = true;
-	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
-
-	d3d11Device->CreateDepthStencilState(&dsDesc, depthStencilState.GetAddressOf());
-}
-
-void Renderer::CreateExampleFont()
-{
-	std::fstream file = std::fstream(".\\hook_fonts\\OpenSans-22.spritefont");
-
-	if (!file.fail())
-	{
-		file.close();
-		exampleFont = std::make_shared<SpriteFont>(d3d11Device.Get(), L".\\hook_fonts\\OpenSans-22.spritefont");
+		for (auto& rtv : d3d11RenderTargetViews)
+		{
+			rtv.ReleaseAndGetAddressOf();
+		}
+		for (auto& rt : d3d12RenderTargets)
+		{
+			rt.ReleaseAndGetAddressOf();
+		}
+		for (auto& wbb : d3d11WrappedBackBuffers)
+		{
+			wbb.ReleaseAndGetAddressOf();
+		}
 	}
 	else
 	{
-		logger.Log("Failed to load the example font");
-	}
-}
-
-void Renderer::DrawExampleTriangle()
-{
-	d3d11Context->OMSetRenderTargets(1, d3d11RenderTargetViews[bufferIndex].GetAddressOf(), depthStencilView.Get());
-	d3d11Context->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-	trianglePos = XMVectorSet
-	(
-		XMVectorGetX(trianglePos) + triangleVelX,
-		XMVectorGetY(trianglePos) + triangleVelY,
-		XMVectorGetZ(trianglePos),
-		1.0f
-	);
-
-	int hit = 0;
-
-	// Check if the triangle hits an edge of the screen
-	if (triangleNdc.x > 0.96f)
-	{
-		triangleVelX = -triangleSpeed;
-		hit++;
-	}
-	else if (triangleNdc.x < -0.96f)
-	{
-		triangleVelX = triangleSpeed;
-		hit++;
-	}
-
-	if (triangleNdc.y > 0.90f)
-	{
-		triangleVelY = -triangleSpeed;
-		hit++;
-	}
-	else if (triangleNdc.y < -0.90f)
-	{
-		triangleVelY = triangleSpeed;
-		hit++;
-	}
-
-	if (hit == 2)
-	{
-		logger.Log("Hit the corner!");
-	}
-
-	triangleCounter += 0.01f;
-	triangleRotX = cos(triangleCounter) * 2;
-	triangleRotY = sin(triangleCounter) * 2;
-
-	XMMATRIX world = XMMatrixIdentity();
-
-	XMMATRIX translation = XMMatrixTranslation(XMVectorGetX(trianglePos), XMVectorGetY(trianglePos), XMVectorGetZ(trianglePos));
-
-	XMMATRIX rotationX = XMMatrixRotationX(triangleRotX);
-	XMMATRIX rotationY = XMMatrixRotationY(triangleRotY);
-	XMMATRIX rotationZ = XMMatrixRotationZ(triangleRotZ);
-	XMMATRIX rotation = rotationX * rotationY * rotationZ;
-
-	XMMATRIX scale = XMMatrixScaling(triangleScale.x, triangleScale.y, triangleScale.z);
-
-	world = scale * rotation * translation;
-
-	XMMATRIX view = XMMatrixLookAtLH(XMVECTOR{ 0.0f, 0.0f, -5.5f }, XMVECTOR{ 0.0f, 0.0f, 0.0f }, XMVECTOR{ 0.0f, 1.0f, 0.0f });
-
-	XMMATRIX projection = XMMatrixPerspectiveFovLH(1.3, ((float)windowWidth / (float)windowHeight), 0.1f, 1000.0f);
-
-	// Get the triangle's screen space (NDC) from its world space, used for collision checking and text positioning
-	XMVECTOR clipSpacePos = XMVector4Transform((XMVector4Transform(trianglePos, view)), projection);
-
-	XMStoreFloat3
-	(
-		&triangleNdc,
-		{ 
-			XMVectorGetX(clipSpacePos) / XMVectorGetW(clipSpacePos),
-			XMVectorGetY(clipSpacePos) / XMVectorGetW(clipSpacePos),
-			XMVectorGetZ(clipSpacePos) / XMVectorGetW(clipSpacePos) 
-		}
-	);
-
-	constantBufferData.wvp = XMMatrixTranspose(world * view * projection);
-
-	// Map the constant buffer on the GPU
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	d3d11Context->Map(constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-	memcpy(mappedResource.pData, &constantBufferData, sizeof(ConstantBufferData));
-	d3d11Context->Unmap(constantBuffer.Get(), 0);
-
-	d3d11Context->VSSetShader(vertexShader.Get(), nullptr, 0);
-	d3d11Context->PSSetShader(pixelShader.Get(), nullptr, 0);
-
-	d3d11Context->IASetInputLayout(inputLayout.Get());
-	d3d11Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	d3d11Context->RSSetState(rasterizerState.Get());
-	d3d11Context->OMSetDepthStencilState(depthStencilState.Get(), 0);
-
-	d3d11Context->VSSetConstantBuffers(0, 1, constantBuffer.GetAddressOf());
-
-	UINT stride = sizeof(Vertex);
-	UINT offset = 0;
-
-	d3d11Context->IASetVertexBuffers(0, 1, vertexBuffer.GetAddressOf(), &stride, &offset);
-	d3d11Context->IASetIndexBuffer(indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-	d3d11Context->DrawIndexed(triangleNumIndices, 0, 0);
-}
-
-void Renderer::DrawExampleText()
-{
-	if (exampleFont == nullptr) return;
-
-	const char* text = "Hello, World!";
-	const char* text2 = "This is a DirectX hook.";
-	XMFLOAT2 stringSize1, stringSize2;
-	XMVECTOR textVector = exampleFont->MeasureString(text);
-	XMVECTOR textVector2 = exampleFont->MeasureString(text2);
-	XMStoreFloat2(&stringSize1, textVector);
-	XMStoreFloat2(&stringSize2, textVector2);
-
-	XMFLOAT2 textPos1 = XMFLOAT2
-	(
-		(windowWidth / 2) * (triangleNdc.x + 1) - (stringSize1.x / 2),
-		(windowHeight - ((windowHeight / 2) * (triangleNdc.y + 1))) - (stringSize1.y / 2) - 150
-	);
-
-	XMFLOAT2 textPos2 = XMFLOAT2
-	(
-		(windowWidth / 2) * (triangleNdc.x + 1) - (stringSize2.x / 2),
-		(windowHeight - ((windowHeight / 2) * (triangleNdc.y + 1))) - (stringSize2.y / 2) + 150
-	);
-
-	spriteBatch->Begin();
-	exampleFont->DrawString(spriteBatch.get(), text, textPos1);
-	exampleFont->DrawString(spriteBatch.get(), text2, textPos2);
-	spriteBatch->End();
-}
-
-void Renderer::ReleaseViewsBuffersAndContext()
-{
-	for (int i = 0; i < bufferCount; i++)
-	{
-		if (d3d12Device.Get() == nullptr)
+		for (auto& rtv : d3d11RenderTargetViews)
 		{
-			d3d11RenderTargetViews[i].ReleaseAndGetAddressOf();
-		}
-		else
-		{
-			d3d11RenderTargetViews[i].ReleaseAndGetAddressOf();
-			d3d12RenderTargets[i].ReleaseAndGetAddressOf();
-			d3d11WrappedBackBuffers[i].ReleaseAndGetAddressOf();
+			rtv.ReleaseAndGetAddressOf();
 		}
 	}
 	
@@ -702,7 +393,7 @@ void Renderer::ReleaseViewsBuffersAndContext()
 
 bool Renderer::CheckSuccess(HRESULT hr)
 {
-	if (SUCCEEDED(hr))
+	logger.Log("HRESULT error: %s", err.ErrorMessage());
 	{
 		return true;
 	}
