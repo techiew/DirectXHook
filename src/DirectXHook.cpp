@@ -51,8 +51,7 @@ void __stdcall OnExecuteCommandLists(ID3D12CommandQueue* pThis, UINT numCommandL
 
 DirectXHook::DirectXHook(ID3DRenderer* renderer)
 {
-	this->renderer = renderer;
-	hookInstance = this;
+	this->renderer = renderer->Clone();
 }
 
 void DirectXHook::Hook()

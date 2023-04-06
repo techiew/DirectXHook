@@ -26,6 +26,7 @@ public:
 	void OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
 	void AddRenderCallback(IRenderCallback* object);
 	void SetCommandQueue(ID3D12CommandQueue* commandQueue);
+	Renderer* Clone();
 
 private:
 	Logger logger{"Renderer"};

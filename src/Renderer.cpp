@@ -35,6 +35,11 @@ void Renderer::SetCommandQueue(ID3D12CommandQueue* commandQueue)
 	this->commandQueue = commandQueue;
 }
 
+Renderer* Renderer::Clone()
+{
+	return new Renderer(*this);
+}
+
 bool Renderer::InitD3DResources(IDXGISwapChain* swapChain)
 {
 	logger.Log("Initializing D3D resources...");

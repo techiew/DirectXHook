@@ -11,4 +11,5 @@ public:
 	virtual void OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags) {};
 	virtual void AddRenderCallback(IRenderCallback* object) {};
 	virtual void SetCommandQueue(ID3D12CommandQueue* commandQueue) {};
+	virtual ID3DRenderer* Clone() = 0;
 };
