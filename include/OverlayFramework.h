@@ -25,7 +25,7 @@ namespace OF
 		float z = 0.0f;
 		int width = 0;
 		int height = 0;
-		float scale = 0.0f;
+		float scale = 1.0f;
 		float rotationDegrees = 0.0f;
 		bool pressed = false;
 		bool clicked = false;
