@@ -16,9 +16,9 @@
 #include "Logger.h"
 
 // Contains various memory manipulation functions related to hooking or modding
-namespace MemoryUtils
+namespace MemUtils
 {
-	static Logger logger{ "MemoryUtils" };
+	static Logger logger{ "MemUtils" };
 	static constexpr int maskBytes = 0xffff;
 	
 	struct HookInformation
@@ -28,8 +28,6 @@ namespace MemoryUtils
 	};
 	static std::unordered_map<uintptr_t, HookInformation> InfoBufferForHookedAddresses;
 
-	// Disables or enables the memory protection in a given region. 
-	// Remembers and restores the original memory protection type of the given addresses.
 	static void ToggleMemoryProtection(bool enableProtection, uintptr_t address, size_t size)
 	{
 		static std::map<uintptr_t, DWORD> protectionHistory;
@@ -46,7 +44,6 @@ namespace MemoryUtils
 		}
 	}
 
-	// Copies memory after changing the permissions at both the source and destination so we don't get an access violation.
 	static void MemCopy(uintptr_t destination, uintptr_t source, size_t numBytes)
 	{
 		ToggleMemoryProtection(false, destination, numBytes);
@@ -56,7 +53,6 @@ namespace MemoryUtils
 		ToggleMemoryProtection(true, destination, numBytes);
 	}
 
-	// Simple wrapper around memset
 	static void MemSet(uintptr_t address, unsigned char byte, size_t numBytes)
 	{
 		ToggleMemoryProtection(false, address, numBytes);
@@ -74,7 +70,6 @@ namespace MemoryUtils
 		return true;
 	}
 
-	// Gets the base address of the game's memory.
 	static uintptr_t GetProcessBaseAddress(DWORD processId)
 	{
 		DWORD_PTR baseAddress = 0;
@@ -166,7 +161,6 @@ namespace MemoryUtils
 		logger.Log("Pattern: %s", patternString.c_str());
 	}
 
-	// Scans the memory of the main process module for the given signature.
 	static uintptr_t SigScan(std::vector<uint16_t> pattern)
 	{
 		DWORD processId = GetCurrentProcessId();
@@ -429,8 +423,6 @@ namespace MemoryUtils
 		return -int32_t(relativeJumpAddress + 5 - destinationAddress);
 	}
 
-	// Places a 14-byte absolutely addressed jump from A to B. 
-	// Add extra clearance when the jump doesn't fit cleanly.
 	static void PlaceAbsoluteJump(uintptr_t address, uintptr_t destinationAddress, size_t clearance = 14)
 	{
 		MemSet(address, 0x90, clearance);
@@ -440,8 +432,6 @@ namespace MemoryUtils
 		logger.Log("Created absolute jump from %p to %p with a clearance of %i", address, destinationAddress, clearance);
 	}
 
-	// Places a 5-byte relatively addressed jump from A to B. 
-	// Add extra clearance when the jump doesn't fit cleanly.
 	static void PlaceRelativeJump(uintptr_t address, uintptr_t destinationAddress, size_t clearance = 5)
 	{
 		MemSet(address, 0x90, clearance);
@@ -474,15 +464,11 @@ namespace MemoryUtils
 		logger.Log("Existing bytes: %s", hexString.c_str());
 	}
 
-	// Place a trampoline hook from A to B while taking third-party hooks into consideration.
-	// Add extra clearance when the jump doesn't fit cleanly.
 	static void PlaceHook(uintptr_t addressToHook, uintptr_t destinationAddress, uintptr_t* returnAddress)
 	{
-		logger.Log("Hooking...");
+		logger.Log("Hooking from %p to %p, return address: %p", addressToHook, destinationAddress, *returnAddress);
 
-		// Most overlays don't care if we overwrite the 0xE9 jump and place it somewhere else, but MSI Afterburner does.
-		// So instead of overwriting jumps we follow them and place our jump at the final destination.
-		int maxFollowAttempts = 50;
+		const int maxFollowAttempts = 50;
 		int countFollowAttempts = 0;
 		while (IsAddressHooked(addressToHook))
 		{
@@ -494,10 +480,6 @@ namespace MemoryUtils
 			{
 				addressToHook = CalculateAbsoluteDestinationFromAbsoluteIndirectNearJumpAtAddress(addressToHook);
 			}
-			else if (IsAbsoluteDirectFarJumpPresentAtAddress(addressToHook))
-			{
-				//addressToHook = CalculateAbsoluteDestinationFromAbsoluteDirectFarJumpAtAddress(addressToHook);
-			}
 
 			countFollowAttempts++;
 			if (countFollowAttempts >= maxFollowAttempts)
@@ -506,16 +488,16 @@ namespace MemoryUtils
 			}
 		}
 
-		PrintBytesAtAddress(addressToHook, 20);
+		PrintBytesAtAddress(addressToHook, 30);
 
 		const size_t assemblyShortJumpSize = 5;
 		const size_t assemblyFarJumpSize = 14;
 		size_t trampolineSize = 0;
 		uintptr_t trampolineAddress = 0;
 		uintptr_t trampolineReturnAddress = 0;
-		size_t thirdPartyHookProtectionBuffer = assemblyFarJumpSize;
+		const size_t thirdPartyHookProtectionBuffer = assemblyFarJumpSize;
 
-		size_t clearance = CalculateRequiredAsmClearance(addressToHook, assemblyShortJumpSize);
+		const size_t clearance = CalculateRequiredAsmClearance(addressToHook, assemblyShortJumpSize);
 
 		trampolineSize = assemblyFarJumpSize * 3 + clearance + thirdPartyHookProtectionBuffer;
 		trampolineAddress = AllocateMemoryWithin32BitRange(trampolineSize, addressToHook + assemblyShortJumpSize);
@@ -540,6 +522,7 @@ namespace MemoryUtils
 
 	static void Unhook(uintptr_t hookedAddress) 
 	{
+		logger.Log("Attempting to remove hook from %p...", hookedAddress);
 		auto search = InfoBufferForHookedAddresses.find(hookedAddress);
 		if (search != InfoBufferForHookedAddresses.end())
 		{

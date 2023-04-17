@@ -8,7 +8,7 @@
 #include "ID3DRenderer.h"
 #include "IRenderCallback.h"
 #include "Logger.h"
-#include "MemoryUtils.h"
+#include "MemUtils.h"
 
 /*
 * Here we have typedefs of the functions we want to hook.

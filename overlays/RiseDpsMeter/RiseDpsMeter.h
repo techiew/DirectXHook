@@ -10,7 +10,7 @@
 
 #include "IRenderCallback.h"
 #include "OverlayFramework.h"
-#include "MemoryUtils.h"
+#include "MemUtils.h"
 
 class Timer
 {

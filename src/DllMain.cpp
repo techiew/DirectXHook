@@ -2,7 +2,7 @@
 
 #include "DirectXHook.h"
 #include "Logger.h"
-#include "MemoryUtils.h"
+#include "MemUtils.h"
 #include "Example/Example.h"
 
 FARPROC forwardExports[6];
