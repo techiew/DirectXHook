@@ -39,10 +39,14 @@ HRESULT __stdcall OnResizeBuffers(IDXGISwapChain* pThis, UINT bufferCount, UINT 
 */
 void __stdcall OnExecuteCommandLists(ID3D12CommandQueue* pThis, UINT numCommandLists, const ID3D12CommandList** ppCommandLists)
 {
+	static bool commandQueueRetrieved = false;
 	if (pThis->GetDesc().Type == D3D12_COMMAND_LIST_TYPE_DIRECT)
 	{
-		hookInstance->renderer->SetCommandQueue(pThis);
-		//hookInstance->UnhookCommandQueue();
+		if (!commandQueueRetrieved)
+		{
+			hookInstance->renderer->SetCommandQueue(pThis);
+			commandQueueRetrieved = true;
+		}
 	}
 
 	((ExecuteCommandLists)hookInstance->executeCommandListsReturnAddress)(pThis, numCommandLists, ppCommandLists);
@@ -50,8 +54,8 @@ void __stdcall OnExecuteCommandLists(ID3D12CommandQueue* pThis, UINT numCommandL
 
 void GetCommandQueue()
 {
-	ID3D12CommandQueue* dummyCommandQueue = hookInstance->CreateDummyCommandQueue();
-	hookInstance->HookCommandQueue(dummyCommandQueue, (uintptr_t)&OnExecuteCommandLists, &hookInstance->executeCommandListsReturnAddress);
+	hookInstance->CreateDummyCommandQueue();
+	hookInstance->HookCommandQueue(hookInstance->dummyCommandQueue.Get(), (uintptr_t)&OnExecuteCommandLists, &hookInstance->executeCommandListsReturnAddress);
 }
 
 DirectXHook::DirectXHook(ID3DRenderer* renderer)
@@ -62,6 +66,14 @@ DirectXHook::DirectXHook(ID3DRenderer* renderer)
 
 void DirectXHook::Hook()
 {
+	bool isRtssLoaded =
+		MemoryUtils::IsDllLoaded("RTSSHooks64.dll")
+		|| MemoryUtils::IsDllLoaded("RTSSHooks.dll");
+	if(isRtssLoaded)
+	{
+		Sleep(40000);
+	}
+
 	logger.Log("OnPresent: %p", &OnPresent);
 	logger.Log("OnResizeBuffers: %p", &OnResizeBuffers);
 
@@ -71,7 +83,7 @@ void DirectXHook::Hook()
 	CreateDummyCommandQueue();
 	HookCommandQueue(dummyCommandQueue.Get(), (uintptr_t)&OnExecuteCommandLists, &hookInstance->executeCommandListsReturnAddress);
 
-	SafelyReleaseDummyResources();
+	ReleaseDummyResources();
 }
 
 void DirectXHook::AddRenderCallback(IRenderCallback* object)
@@ -219,30 +231,10 @@ void DirectXHook::UnhookCommandQueue()
 	MemoryUtils::Unhook(executeCommandListsAddress);
 }
 
-void DirectXHook::SafelyReleaseDummyResources()
+void DirectXHook::ReleaseDummyResources()
 {
-	bool isRtssLoaded =
-		MemoryUtils::IsDllLoaded("RTSSHooks64.dll")
-		|| MemoryUtils::IsDllLoaded("RTSSHooks.dll");
-	if (isRtssLoaded)
-	{
-		// Don't release our dummy resources as RTSS will cause a crash.
-		// This only happens if this hook is injected (not proxied) between
-		// 5-10 seconds after the game has booted.
-		// I think RTSS hooks D3D11CreateDeviceAndSwapChain and grabs
-		// the dummy resources we create. This causes a null pointer error 
-		// if we release them.
-		logger.Log("RTSS is loaded");
-	}
-	else
-	{
-		// Not releasing the swapchain and device will with some games 
-		// increase the GPU wattage quite dramatically, even if they 
-		// are not actually in use. However it does not seem to increase
-		// GPU USAGE or affect performance.
-		dummySwapChain->Release();
-		dummyCommandQueue->Release();
-		dummyD3D11Device->Release();
-		dummyD3D12Device->Release();
-	}
+	dummySwapChain->Release();
+	dummyCommandQueue->Release();
+	dummyD3D11Device->Release();
+	dummyD3D12Device->Release();
 }

@@ -32,6 +32,7 @@ public:
 	uintptr_t presentReturnAddress = 0;
 	uintptr_t resizeBuffersReturnAddress = 0;
 	uintptr_t executeCommandListsReturnAddress = 0;
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue> dummyCommandQueue = nullptr;
 
 	DirectXHook(ID3DRenderer* renderer);
 	void Hook();
@@ -46,10 +47,9 @@ private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain> dummySwapChain = nullptr;
 	Microsoft::WRL::ComPtr<ID3D11Device> dummyD3D11Device = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12Device> dummyD3D12Device = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12CommandQueue> dummyCommandQueue = nullptr;
 
 	void CreateDummyDeviceAndSwapChain();
 	void CreateDummyD3D12Device();
 	void HookSwapChain(IDXGISwapChain* dummySwapChain, uintptr_t presentDetourFunction, uintptr_t resizeBuffersDetourFunction, uintptr_t* presentReturnAddress, uintptr_t* resizeBuffersReturnAddress);
-	void SafelyReleaseDummyResources();
+	void ReleaseDummyResources();
 };

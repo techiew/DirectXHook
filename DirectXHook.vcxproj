@@ -48,7 +48,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -181,9 +181,9 @@ XCOPY /y "C:\Programming\Github repositories\DirectXHook\assets\hook_fonts" "G:\
       <AdditionalDependencies>d3d11.lib;d3d12.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>COPY "C:\Programming\Github repositories\DirectXHook\x64\Release\dinput8.dll" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\dinput8.dll"
-XCOPY /y "C:\Programming\Github repositories\DirectXHook\assets\hook_textures" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\hook_textures\"
-XCOPY /y "C:\Programming\Github repositories\DirectXHook\assets\hook_fonts" "G:\SteamLibrary\steamapps\common\ELDEN RING\Game\hook_fonts\"</Command>
+      <Command>COPY "C:\Programming\Github repositories\DirectXHook\x64\Release\dinput8.dll" "F:\SteamLibrary\steamapps\common\ELDEN RING\Game\dinput8.dll"
+XCOPY /y "C:\Programming\Github repositories\DirectXHook\assets\hook_textures" "F:\SteamLibrary\steamapps\common\ELDEN RING\Game\hook_textures\"
+XCOPY /y "C:\Programming\Github repositories\DirectXHook\assets\hook_fonts" "F:\SteamLibrary\steamapps\common\ELDEN RING\Game\hook_fonts\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

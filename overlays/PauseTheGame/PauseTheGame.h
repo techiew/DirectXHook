@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sstream>
+
 #include "IRenderCallback.h"
 #include "OverlayFramework.h"
 #include "Logger.h"
