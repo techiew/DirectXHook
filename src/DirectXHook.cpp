@@ -52,12 +52,6 @@ void __stdcall OnExecuteCommandLists(ID3D12CommandQueue* pThis, UINT numCommandL
 	((ExecuteCommandLists)hookInstance->executeCommandListsReturnAddress)(pThis, numCommandLists, ppCommandLists);
 }
 
-void GetCommandQueue()
-{
-	hookInstance->CreateDummyCommandQueue();
-	hookInstance->HookCommandQueue(hookInstance->dummyCommandQueue.Get(), (uintptr_t)&OnExecuteCommandLists, &hookInstance->executeCommandListsReturnAddress);
-}
-
 DirectXHook::DirectXHook(ID3DRenderer* renderer)
 {
 	this->renderer = renderer;
@@ -224,11 +218,6 @@ void DirectXHook::HookCommandQueue(
 	}
 
 	MemoryUtils::PlaceHook(executeCommandListsAddress, executeCommandListsDetourFunction, executeCommandListsReturnAddress);
-}
-
-void DirectXHook::UnhookCommandQueue()
-{
-	MemoryUtils::Unhook(executeCommandListsAddress);
 }
 
 void DirectXHook::ReleaseDummyResources()
