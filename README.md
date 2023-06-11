@@ -1,7 +1,7 @@
 ## DirectXHook + Overlay Framework
 A DirectX hook that works with DirectX11 and DirectX12 in 32-bit and 64-bit modes. 
 
-Basically this library lets you render your own things inside the game window, as an integrated part of the game rather than as an external overlay. A straightforward but primitive overlay framework is included so you can quickly and easily start creating overlays. Tutorial below.
+Basically this library lets you render your own things inside the game window, as an integrated part of the game rather than as an external overlay. A straightforward but primitive overlay framework is included so you can quickly and easily start creating overlays. The built binary consist of a dinput8 proxy DLL which you'll place next to the game binary. The game will then automatically load the DLL containing your overlay code when it boots.
 
 ### This library is used in...
 #### A mod for Elden Ring, ["First Person Souls - Full Game Conversion found on NexusMods"](https://www.nexusmods.com/eldenring/mods/3266)
