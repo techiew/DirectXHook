@@ -1,9 +1,7 @@
 ## DirectXHook + Overlay Framework
 A DirectX hook that works with DirectX11 and DirectX12 in 32-bit and 64-bit modes. 
 
-Basically this library lets you render your own things inside the game window, as an integrated part of the game rather than as an external overlay. A straightforward but primitive overlay framework is included so you can quickly and easily start creating overlays. 
-
-The built binary consist of a dinput8 proxy DLL which you'll place next to the game binary. The game will then automatically load the DLL containing your overlay code when it boots.
+Basically this library lets you render your own things inside the game window, as an integrated part of the game rather than as an external overlay. A straightforward but primitive overlay framework is included so you can quickly and easily start creating overlays. Tutorial below.
 
 ### This library is used in...
 #### A mod for Elden Ring, ["First Person Souls - Full Game Conversion found on NexusMods"](https://www.nexusmods.com/eldenring/mods/3266)
@@ -25,7 +23,7 @@ The built binary consist of a dinput8 proxy DLL which you'll place next to the g
 ## How to create an overlay
 First, check the [wiki page](https://github.com/techiew/DirectXHook/wiki/How-to-set-up-the-Visual-Studio-solution) on how to quickly set up the Visual Studio solution.
 
-When the project is built, "dxgi.dll" will be generated in the project folder. This can be copied next to a game executable which uses DirectX 11 or 12. The game will load the .dll automatically on startup and will render what you told it to.
+When the project is built, "dinput8.dll" will be generated in the project folder. This must be copied next to a game executable which uses DirectX 11 or 12. The game will then load the .dll automatically on startup and will render what you told it to.
 
 Also note that the "hook_textures" folder containing "blank.jpg" must be present next to dxgi.dll in order for anything to render.
 
