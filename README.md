@@ -1,20 +1,22 @@
 ## DirectXHook + Overlay Framework
-This is a DirectX hook that works with DirectX 11 and DirectX 12. A straightforward but primitive overlay framework is included.
+A DirectX hook that works with DirectX11 and DirectX12 in 32-bit and 64-bit. A straightforward but primitive overlay framework is included.
 
-**Readme is not complete, I will update it at some point...**
+#### A mod for Elden Ring, ["First Person Souls - Full Game Conversion](https://www.nexusmods.com/eldenring/mods/3266)
+
+[![First Person Souls](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/er_first_person_souls.png)](https://www.youtube.com/watch?v=nuau_lZ0Imc)
+
+#### A mod for Elden Ring, ["Pause the game" found on NexusMods](https://www.nexusmods.com/eldenring/mods/43)
+
+[![Pause the Game](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/er_pause_the_game.png)](https://www.youtube.com/watch?v=xvK1ti_hHh4)
 
 ### Overlay examples
 #### A mod for Monster Hunter Rise, ["Rise DPS Meter" found on NexusMods](https://www.nexusmods.com/monsterhunterrise/mods/289)
 
--add video-
+-video to be added-
 
-#### A mod for Elden Ring, ["Pause the game" found on NexusMods](https://www.nexusmods.com/eldenring/mods/43)
+#### Example triangle
 
--add video-
-
-#### Test triangle
-
--add video-
+-video to be added-
 
 ## How to create an overlay
 First, check the [wiki page](https://github.com/techiew/DirectXHook/wiki/How-to-set-up-the-Visual-Studio-solution) on how to quickly set up the Visual Studio solution.
@@ -42,7 +44,7 @@ Make the hook render your stuff by adding these lines in DllMain.cpp:
 
 ![dllmain](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/dllmain.png)
 
-But we haven't yet defined anything to render...
+But we have yet to define anything to render...
 
 ### Boxes
 All rendering with the overlay framework is done using Boxes:
