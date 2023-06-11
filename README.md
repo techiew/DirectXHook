@@ -1,7 +1,8 @@
 ## DirectXHook + Overlay Framework
 A DirectX hook that works with DirectX11 and DirectX12 in 32-bit and 64-bit. A straightforward but primitive overlay framework is included.
 
-#### A mod for Elden Ring, ["First Person Souls - Full Game Conversion](https://www.nexusmods.com/eldenring/mods/3266)
+### Overlay examples
+#### A mod for Elden Ring, ["First Person Souls - Full Game Conversion found on NexusMods"](https://www.nexusmods.com/eldenring/mods/3266)
 
 [![First Person Souls](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/er_first_person_souls.png)](https://www.youtube.com/watch?v=nuau_lZ0Imc)
 
@@ -9,7 +10,6 @@ A DirectX hook that works with DirectX11 and DirectX12 in 32-bit and 64-bit. A s
 
 [![Pause the Game](https://github.com/techiew/DirectXHook/blob/master/assets/repo_pictures/er_pause_the_game.png)](https://www.youtube.com/watch?v=xvK1ti_hHh4)
 
-### Overlay examples
 #### A mod for Monster Hunter Rise, ["Rise DPS Meter" found on NexusMods](https://www.nexusmods.com/monsterhunterrise/mods/289)
 
 -video to be added-
