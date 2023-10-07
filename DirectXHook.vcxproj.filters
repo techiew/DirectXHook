@@ -23,9 +23,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\DirectXHook.def">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -84,10 +81,8 @@
     <ClInclude Include="include\ID3DRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <MASM Include="src\Jump.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
+    <ClInclude Include="include\UniversalProxyDLL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

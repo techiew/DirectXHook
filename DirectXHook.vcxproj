@@ -189,7 +189,6 @@ XCOPY /y "C:\Programming\Github repositories\DirectXHook\assets\hook_fonts" "F:\
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="src\DirectXHook.def" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="overlays\Example\Example.cpp">
