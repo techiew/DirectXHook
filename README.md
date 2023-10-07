@@ -23,7 +23,7 @@ Basically this library lets you render your own things inside the game window, a
 ## How to create an overlay
 First, check the [wiki page](https://github.com/techiew/DirectXHook/wiki/How-to-set-up-the-Visual-Studio-solution) on how to quickly set up the Visual Studio solution.
 
-When the project is built, "dxgi.dll" will be generated in the project folder. This can be copied next to a game executable which uses DirectX 11 or 12. The game will load the .dll automatically on startup and will render what you told it to.
+When the project is built, "dinput8.dll" will be generated in the project folder. This must be copied next to a game executable which uses DirectX 11 or 12. The game will then load the .dll automatically on startup and will render what you told it to.
 
 Also note that the "hook_textures" folder containing "blank.jpg" must be present next to dxgi.dll in order for anything to render.
 
