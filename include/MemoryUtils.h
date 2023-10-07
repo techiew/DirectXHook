@@ -266,8 +266,10 @@ namespace MemoryUtils
 		intptr_t unidirectionalRange = 0x7fffffff;
 		size_t lowerBound = origin - unidirectionalRange;
 		size_t higherBound = origin + unidirectionalRange;
+		size_t numAttempts = 0;
 		for (size_t i = lowerBound; i < higherBound;)
 		{
+			numAttempts++;
 			memoryAddress = (uintptr_t)VirtualAlloc((void*)i, numBytes, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
 			if (memoryAddress != NULL)
@@ -294,7 +296,13 @@ namespace MemoryUtils
 
 		if (memoryAddress == NULL)
 		{
-			logger.Log("Failed to allocate %i bytes of memory", numBytes);
+			logger.Log(
+				"Failed to allocate %i bytes of memory. Origin: %p, lower: %p, higher: %p, attempts: %i", 
+				numBytes,
+				origin,
+				lowerBound,
+				higherBound,
+				numAttempts);
 		}
 		else
 		{
