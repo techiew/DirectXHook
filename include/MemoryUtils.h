@@ -263,9 +263,9 @@ namespace MemoryUtils
 	static uintptr_t AllocateMemoryWithin32BitRange(size_t numBytes, uintptr_t origin)
 	{
 		uintptr_t memoryAddress = NULL;
-		intptr_t unidirectionalRange = 0x7fffffff;
-		size_t lowerBound = origin - unidirectionalRange;
-		size_t higherBound = origin + unidirectionalRange;
+		size_t unidirectionalRange = 0x7fffffff;
+		uintptr_t lowerBound = origin - unidirectionalRange;
+		uintptr_t higherBound = origin + unidirectionalRange;
 		size_t numAttempts = 0;
 		for (size_t i = lowerBound; i < higherBound;)
 		{
@@ -516,7 +516,13 @@ namespace MemoryUtils
 		size_t clearance = CalculateRequiredAsmClearance(addressToHook, assemblyShortJumpSize);
 
 		trampolineSize = assemblyFarJumpSize * 3 + clearance + thirdPartyHookProtectionBuffer;
+
+#ifdef _WIN64
 		trampolineAddress = AllocateMemoryWithin32BitRange(trampolineSize, addressToHook + assemblyShortJumpSize);
+#else
+		trampolineAddress = AllocateMemory(trampolineSize);
+#endif
+
 		trampolineReturnAddress = addressToHook + clearance;
 		MemCopy(trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer, addressToHook, clearance);
 
@@ -528,10 +534,13 @@ namespace MemoryUtils
 			(uintptr_t)&InfoBufferForHookedAddresses[addressToHook].originalBytes[0],
 			trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer,
 			InfoBufferForHookedAddresses[addressToHook].originalBytes.size());
-	
+#ifdef _WIN64
 		PlaceAbsoluteJump(trampolineAddress + thirdPartyHookProtectionBuffer, destinationAddress);
 		PlaceAbsoluteJump(trampolineAddress + trampolineSize - assemblyFarJumpSize, trampolineReturnAddress);
-
+#else
+		PlaceRelativeJump(trampolineAddress + thirdPartyHookProtectionBuffer, destinationAddress);
+		PlaceRelativeJump(trampolineAddress + trampolineSize - assemblyFarJumpSize, trampolineReturnAddress);
+#endif
 		*returnAddress = trampolineAddress + assemblyFarJumpSize + thirdPartyHookProtectionBuffer;
 		PlaceRelativeJump(addressToHook, trampolineAddress, clearance);
 	}

@@ -38,6 +38,7 @@ BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID)
 	if (reason == DLL_PROCESS_ATTACH)
 	{
 		OpenDebugTerminal();
+		UPD::MuteLogging();
 		UPD::CreateProxy(module);
 		CreateThread(0, 0, &HookThread, 0, 0, NULL);
 	}
